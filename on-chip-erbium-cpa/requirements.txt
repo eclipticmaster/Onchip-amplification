@@ -1,0 +1,3 @@
+numpy>=1.24
+matplotlib>=3.7
+# lumapi is provided by Ansys Lumerical, not installed with pip.

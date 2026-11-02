@@ -1,0 +1,25 @@
+# Local Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Files produced by simulations
+results/*
+!results/.gitkeep
+*.lms
+*.fsp
+*.icp
+*.log
+*.bak
+
+# Never accidentally commit proprietary tapeout/PDK files
+pdk/
+data/private/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/settings.json
