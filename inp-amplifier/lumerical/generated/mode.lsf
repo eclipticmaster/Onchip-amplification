@@ -29,7 +29,10 @@ set("index",3.4);
 set("override mesh order from material database",1);
 set("mesh order",1);
 addfde;
+<<<<<<< HEAD
 # The built-in FDE solver name is read-only.
+=======
+>>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4
 set("solver type",3);
 set("x",0); set("x span",8e-06);
 set("y",0); set("y span",4e-06);
@@ -50,6 +53,7 @@ x=getdata("mode1","x"); y=getdata("mode1","y");
 Ex=getdata("mode1","Ex"); Ey=getdata("mode1","Ey"); Ez=getdata("mode1","Ez");
 Hx=getdata("mode1","Hx"); Hy=getdata("mode1","Hy");
 neff=getdata("mode1","neff");
+<<<<<<< HEAD
 matlabsave("mode_fields.mat",x,y,Ex,Ey,Ez,Hx,Hy,neff);
 # Tracked sweeps start at the wavelength of the selected mode; their start
 # wavelength property is read-only. Preserve the nominal fields above, then
@@ -60,6 +64,20 @@ setanalysis("wavelength",1.5e-06);
 nmodes=findmodes;
 if (nmodes<1) { error("MODE found no modes at the sweep start wavelength."); }
 selectmode(bestoverlap("inpamp_nominal_mode"));
+=======
+# Field intensity, flux overlap and area are computed IN LUMERICAL.
+E2=pinch(abs(Ex)^2+abs(Ey)^2+abs(Ez)^2);
+Sz=pinch(0.5*real(Ex*conj(Hy)-Ey*conj(Hx)));
+X=meshgridx(x,y); Y=meshgridy(x,y);
+active_mask=(abs(X)<=1e-06) & (abs(Y)<=5.999999999999999e-08);
+Ptotal=integrate2(Sz,[1,2],x,y);
+if (abs(Ptotal)<1e-30) { error("MODE returned no propagating modal power."); }
+Gamma=real(integrate2(Sz*active_mask,[1,2],x,y)/Ptotal);
+Aeff=real(integrate2(E2,[1,2],x,y)^2/integrate2(E2^2,[1,2],x,y));
+matlabsave("mode_fields.mat",x,y,E2,Ex,Ey,Ez,Hx,Hy,neff);
+matlabsave("mode_metrics.mat",neff,Gamma,Aeff);
+selectmode(1);
+>>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4
 setanalysis("track selected mode",1);
 setanalysis("detailed dispersion calculation",1);
 setanalysis("stop wavelength",1.6e-06);

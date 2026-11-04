@@ -1,3 +1,3 @@
-"""InP SOA / microcomb research models. See docs/physics.md for scope."""
+"""Native Lumerical orchestration and offline exported-data analysis."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

@@ -25,7 +25,7 @@
   },
   "microcomb": {
     "status": "no_native_kerr_comb_solver_exported",
-    "note": "The included Python LLE is an optional separate reference model, not a Lumerical result."
+    "requires": "A native nonlinear resonator model in the INTERCONNECT template. No Python comb simulation or fallback is provided."
   },
   "scope": "No licensed Lumerical simulation is implied by a successful export."
 }

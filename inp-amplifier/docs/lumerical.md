@@ -1,111 +1,131 @@
-# Primary workflow: Ansys Lumerical
+# Lumerical-only simulation workflow
 
-The target tools are **MODE + FDTD + INTERCONNECT**, using YAML as the design input and vendor `lumapi` for automation. Exporting scripts does not require Ansys. Executing native simulations requires your licensed installation; Ansys is not installed in the cloud machine used to develop this code. Native `.lms`, `.fsp`, `.icp` projects and their results are produced only by Lumerical.
+Every physical simulation executes in **Ansys Lumerical MODE, FDTD or INTERCONNECT**. Python only manages YAML, native scripts/cases, file IO and analysis/graphs of native exports. The previous Python SOA, carrier/thermal, scalar-mode, CPA and Kerr/LLE simulators are removed.
 
-## Products and physics
+## 1. Native scripts or vendor API
 
-| Tool | Included automation | What this does not calculate |
-| --- | --- | --- |
-| MODE | Effective InGaAsP/InP cross-section; vector FDE modes; tracked-mode dispersion; native field export and power-flux overlap | Quantum-well band structure, electrical injection or gain saturation |
-| FDTD | 3-D passive taper coupon; TE mode source; wavelength-resolved total transmission/reflection | Electrically pumped SOA gain or a Kerr microcomb; no material gain is faked with a negative index |
-| INTERCONNECT | Load your native SOA/CML circuit; map YAML pump/current/device settings onto verified native properties; run and export configured analyzer data | An unprovided epitaxial/semiconductor gain model; automatically determining version-specific model parameters/ports |
-
-The optional Python SOA/LLE scripts are independent reference calculations. Their output is **not a Lumerical result**. The LLE microcomb solver is not exported as a native INTERCONNECT nonlinear resonator. The native workflow initially characterizes the amplifier/pump delivery; demonstrating the full comb in Lumerical requires a suitable nonlinear resonator compact model and data, which are not bundled here.
-
-## 1. Export scripts from YAML
-
-From `inp-amplifier`, using your virtual-environment Python:
+From `inp-amplifier`, with its virtual-environment Python:
 
 ```bash
 python -m inpamp validate configs/lumerical.yaml
-python -m inpamp export-lumerical configs/lumerical.yaml --output results/lumerical-export
+python -m inpamp export configs/lumerical.yaml --output results/native-scripts
 ```
 
-The export contains:
+The export includes `mode.lsf`, `fdtd.lsf`, `interconnect.lsf`, a resolved YAML and a simulation plan. It creates no native projects/results. Copy the export directory to your Lumerical machine, open a **new** project in the correct product, set the working directory to the export folder and run that product's script. MODE/FDTD scripts rebuild the geometry in the open project. All output filenames are relative so the export is portable between machines.
 
-- `mode.lsf`: creates/saves `inp_waveguide.lms`, solves modes/dispersion and writes `mode_fields.mat` and `mode_dispersion.mat` when run in MODE.
-- `fdtd.lsf`: creates/saves `inp_taper.fsp` and writes `taper_transmission.mat` when run in FDTD.
-- `interconnect.lsf`: loads `SOA_TEMPLATE.icp`, applies your configured bindings, saves `inp_pump.icp` and exports configured native results. It requires the template described below.
-- `resolved_config.yaml` and `simulation_plan.json`, which explicitly mark export-only status and estimate FDTD mesh size.
+- MODE creates `inp_waveguide.lms`, `mode_fields.mat`, `mode_metrics.mat` and `mode_dispersion.mat`.
+- FDTD creates `inp_taper.fsp` and `taper_transmission.mat`.
+- INTERCONNECT loads your `SOA_TEMPLATE.icp`, applies verified property bindings, creates `inp_pump.icp` and saves the configured analyzer datasets.
 
-Copy the export directory to your Lumerical machine. In each product, set the working directory to that folder, open the corresponding `.lsf` in the script editor, and run it. The scripts use relative filenames so the export can move between cloud/Linux and Windows. The generated scripts and projects are editable inside Lumerical; change YAML and re-export to reproduce a geometry change.
-
-The default cross-section uses effective constant indices. For a physical study, set `lumerical.core_material` and `cladding_material` to exact dispersive material-database names available in your installation, or replace the effective geometry with your actual layered stack. MODE must calculate confinement for the correct gain-layer stack/polarization. Constant-index MODE results contain waveguide dispersion only, not a calibrated material-dispersion prediction.
-
-## 2. Run through lumapi on the licensed machine
-
-Do **not** install a random PyPI package named lumapi. Use the `lumapi.py` shipped with Ansys, normally in `<Lumerical installation>/api/python`. Set `LUMERICAL_API_PATH` to that directory or pass `--api-path`.
+Alternatively use `lumapi.py` shipped with the licensed Ansys installation. Set `LUMERICAL_API_PATH` to its `api/python` directory, or pass `--api-path`. Do not install an unrelated PyPI package named lumapi.
 
 ```powershell
 $env:LUMERICAL_API_PATH = "C:\Program Files\Ansys Inc\vXXX\Lumerical\api\python"
-python -m inpamp run-lumerical configs/lumerical.yaml --solver mode --output results/native-mode
-python -m inpamp run-lumerical configs/lumerical.yaml --solver fdtd --output results/native-taper
+python -m inpamp run configs/lumerical.yaml --solver mode --output results/native-mode
+python -m inpamp run configs/lumerical.yaml --solver fdtd --output results/native-taper
+python -m inpamp run configs/lumerical.yaml --solver interconnect --output results/native-soa
 ```
 
-Replace the version/path with your installation. On Linux, export the equivalent path and use the same commands. Configure your Ansys license normally; no license tokens are stored in YAML. Set `lumerical.hide_gui: true` only if your installation supports that execution mode.
+Replace the version/path with your installation. Linux uses the equivalent exported path. Configure your Ansys license through Ansys; no credentials belong in YAML. `run-lumerical` is an alias for `run`; both require the vendor API and use the native solver exclusively. An unavailable API, license, native property or result is an error with no Python replacement computation.
 
-The runner saves a `run_status.json` with completed/failed state and verifies expected native files. MODE also writes `mode_metrics.json` using **native vector Poynting flux** to estimate active-stripe overlap. FDTD writes a CSV of total monitor flux. Any API, license, property or result error is a failed native run, not a fallback to Python calculations.
+The runner records `run_status.json`, the configuration hash and expected native files. MODE metrics are integrated in `mode.lsf`; Python only serializes their native values. Ansys is not installed in this cloud machine, so native execution/compatibility still requires validation on your licensed installation.
 
+<<<<<<< HEAD
 MODE exports fields and overlap metrics at `source.wavelength_nm`. It then solves at `lumerical.mode.wavelength_start_nm`, selects the mode with the best overlap with the nominal mode, and tracks that mode through `wavelength_stop_nm`. In a tracked sweep, Lumerical fixes the start wavelength to the initial mode's wavelength; setting `start wavelength` after enabling tracking is invalid. The final `.lms` contains the sweep, while `mode_fields.mat` and `mode_metrics.json` describe the nominal source wavelength. The built-in FDE/FDTD solver names are read-only and are left at their native defaults.
 
 If a script fails, the CLI and `run_status.json` include the native script filename, line number and error message captured with Lumerical's [try/catch](https://optics.ansys.com/hc/en-us/articles/360034928513-try-Script-command) and [feval](https://optics.ansys.com/hc/en-us/articles/360034405934-feval-Script-command) commands. Inspect that line in the exported `.lsf`. After correcting YAML or updating the code, rerun with a **new output directory**: existing results are never overwritten or resumed. Old exported scripts must be regenerated to pick up code fixes.
 
 ## 3. Prepare the active SOA circuit in INTERCONNECT
+=======
+## 2. Optical cross-section and transition
+>>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4
 
-The correct native SOA element/CML, gain data, electrical connection, property names and port names depend on your installed version and device model. They are deliberately not guessed or replaced with an ideal constant-gain amplifier. Create a small native circuit **once** in INTERCONNECT using your available native SOA model or foundry CML:
+`mode.*` sets fallback effective indices and the native MODE window. `device.width_um`, `core_thickness_um` and the active-stripe mask feed the MODE geometry/analysis. `lumerical.mode.*` controls the native mesh/trial modes/dispersion sweep. Set exact `lumerical.core_material` and `cladding_material` names from your installation for real dispersive materials. No generic index choice is a substitute for your epitaxy.
+
+FDTD uses `lumerical.fdtd.*`, including `input_width_um` and the short coupon length. It shares the output width/core thickness with `device`. It does not simulate a full millimetre-scale electrically pumped SOA. The planner estimates mesh size, but inspect the actual native mesh, memory, PML and decay time before interpreting results. Use a real hybrid transition geometry and native ports if you need an InP-to-SiN scattering matrix.
+
+## 3. Active native SOA circuit
+
+Create/select a native INTERCONNECT template using the actual SOA element or foundry CML available in your installed version. A typical initial circuit is:
 
 ```text
 CW laser (pump_laser) -> native SOA (inp_soa) -> output analyzer (output_osa)
                                 ^
-                       bias current (bias_current)
+                       bias source (bias_current)
 ```
 
-Connect the electrical source only if your chosen SOA exposes an electrical bias port; some models expose current as a direct parameter. Use a native spectral analyzer, and add input/output power meters and a noise analyzer as appropriate. Ensure the SOA's traveling-wave/carrier/gain model and parameterization are configured for your InP-platform active material. A native ideal optical amplifier or an S-parameter block does not establish active semiconductor gain physics.
+Some SOA models use a direct current property instead of an electrical port; use the appropriate native connection. Add input/output power meters and native noise analyzers as needed. Calibrate the active material/gain and any carrier/thermal parameters inside the native model. An ideal amplifier or passive S matrix does not establish active semiconductor physics.
 
-Save as `SOA_TEMPLATE.icp`. Put the file alongside your child YAML, or configure an absolute `lumerical.interconnect.template_path`. If the template has external data/CML dependencies, retain those files and their relative paths. You can use an existing vendor application example as this template instead of assembling a new circuit.
+Save the configured circuit as `.icp`. Set `lumerical.interconnect.template_path` to it. Relative paths are resolved against the YAML selected on the command line. Keep external gain/CML data files and relative dependencies with the project. For manual GUI execution, place the template in the export directory as `SOA_TEMPLATE.icp`.
 
-Inspect its actual property/result names:
+Inspect the native names before applying a property map:
 
 ```bash
 python -m inpamp inspect-interconnect configs/lumerical.yaml --template /path/to/SOA_TEMPLATE.icp
 ```
 
-The example YAML bindings assume `pump_laser.frequency` in Hz, `pump_laser.power` in W, and `bias_current.amplitude` in A. These are **template conventions to verify**, not a claim that every SOA/version has those properties. The configured analyzer result `output_osa/spectrum` must also match your native analyzer. Inspect the template in the GUI if results are unavailable until after a run.
+The example conventions are `pump_laser.frequency` in Hz, `pump_laser.power` in W, `bias_current.amplitude` in A and the analyzer result `output_osa/spectrum`. They must match your selected model; they are not universal stock-model guarantees. Update `inspect_elements`, `bindings`, `fixed_properties` and `results` to the exact native names. Some analyzer results become available only after running; inspect in the GUI if needed. The runner verifies each target property through a native getter before applying changes.
 
-Set `bindings` to the exact native names/units. The runner uses native getters to verify each target property before setting anything. For a SOA with current as a direct parameter, replace the `bias_current` binding with the SOA's actual current property. To control length, volume, width or thermal settings, bind them only if the native model exposes the corresponding quantity. Supported SI quantities are:
+Supported common unit-converted quantities are:
 
 ```text
 source.frequency_Hz       source.power_W
-device.current_A          device.length_m
-device.width_m            device.active_thickness_m
-device.active_volume_m3   thermal.ambient_K
-material.linewidth_enhancement_factor
+ device.current_A         device.length_m
+ device.width_m           device.active_thickness_m
+ device.active_volume_m3  thermal.ambient_K
 ```
 
-For additional model-specific coefficients, use `fixed_properties` with verified property names and native units:
+Extra coefficients are direct native values, explicitly mapped. For example, **only if your native model exposes the indicated property**, a child YAML can contain:
 
 ```yaml
+extends: lumerical.yaml
+parameters:
+  alpha_H: 5.0
 lumerical:
   interconnect:
-    template_path: SOA_TEMPLATE.icp
-    # Preserve/replace the bindings/results sections as required by your model.
-    fixed_properties: []  # Entries: {element: <name>, property: <native name>, value: <SI value>}
+    # This list replaces the inherited list; retain your verified pump/bias
+    # bindings here as well. Use your model's actual property name.
+    bindings:
+      - element: inp_soa
+        property: your_verified_linewidth_enhancement_property
+        quantity: parameters.alpha_H
 ```
 
-Then run:
+`parameters` does not run a Python gain model. Material/geometry changes in MODE do not automatically refit a circuit SOA/CML. Import/update the appropriate native model settings and record their source. To simulate full microcomb dynamics, extend the native template with a nonlinear resonator model; no Python LLE is provided.
+
+## 4. Native sweeps and graphs
+
+The YAML sweep list selects a native product, a parameter and values:
+
+```yaml
+sweeps:
+  - name: current
+    solver: interconnect
+    parameter: device.current_mA
+    values: [100.0, 200.0, 300.0]
+```
 
 ```bash
-python -m inpamp run-lumerical configs/lumerical.yaml --solver interconnect --output results/native-soa
+python -m inpamp sweep configs/lumerical.yaml --name current --output results/current-sweep
+python -m inpamp sweep configs/lumerical.yaml --name current --export-only --output results/current-scripts
 ```
 
-The native project and configured result datasets are saved as `.icp`, `.mat` and JSON. No synthetic SOA gain from the reference Python solver is substituted. For a YAML current sweep, rerun `run-lumerical` with `--set device.current_mA=...` and a separate output directory; the same property map applies. Geometry/overlap changes do not automatically refit an external CML's material model. Record which MODE/FDTD results were used to update that model and which coefficients remain independent.
+Each case runs the selected Lumerical engine or exports a native script for the GUI. There is no Python sweep simulation. Irrelevant/unbound parameters fail before launch; failures stop the sweep and mark its manifest failed. Use separate output folders for convergence studies and preserve the exact YAML/data.
 
-## 4. Validation on your installation
+After native execution, plotting is offline and needs no Ansys installation:
 
-First run MODE at the nominal wavelength, inspect mode1's polarization and confinement, then check the tracked dispersion for mode crossings. Refine mesh and window. The overlap uses an effective centered active stripe; replace that mask with your real gain layers when available.
+```bash
+python -m inpamp plot results/native-mode --solver mode --output results/mode-graphs
+python -m inpamp plot results/native-taper --solver fdtd --output results/taper-graphs
+python -m inpamp inspect-results results/native-soa/output_spectrum.mat
+```
 
-For FDTD, inspect source-mode identity, actual mesh/memory, PML distance, simulation decay, passivity and convergence. Default FDTD is a **20 um transition coupon**, not the 150 um concept taper or full 1 mm SOA. The distinction limits computational cost; set the coupon length to the intended transition when validating it. Monitor flux is total transmitted/reflected power; a guided-mode scattering matrix requires mode-expansion/port measurements and de-embedding. Do not automatically equate `1-T` with hybrid InP–SiN insertion loss: the coupon is an effective InP-platform taper, not a validated heterogeneous transition.
+Use the exact native dataset paths listed by `inspect-results` with `plot --solver interconnect --result ... --x ... --y ...`. Multi-trace arrays require explicit field/index selection; complex traces require a component selection. To plot a sweep, configure/export a scalar native measurement in every case, then use `plot-sweep --result FILE --field PATH`. The [README](../README.md) contains full command examples. Missing result files are errors, never replaced with analytic curves.
 
+<<<<<<< HEAD
 For INTERCONNECT, compare gain versus current, input power and wavelength with the native SOA reference example or measured/literature data. Check ASE/noise definitions and reference planes. Add the intended resonator/coupler CML and measured dispersion only after amplifier/pump delivery is calibrated. There is no claim that having a native project file alone proves soliton generation.
 
 The default MODE and FDTD workflows have been exercised on Windows with Lumerical 2026 R1 (v261). The saved MODE project was reopened and its 21 finite dispersion values verified across 1500–1600 nm. FDTD created its native project and 21 finite transmission/reflection samples over the same range. These runs establish execution for this configuration and installation; they do not establish mesh convergence or device calibration. INTERCONNECT's template-specific bindings still require validation with your active circuit. The Python tests verify generation, unit conversions, field postprocessing and failure reporting without simulating Ansys. Model equations and optional reference-code assumptions remain in [physics.md](physics.md), with provenance in [references.md](references.md).
+=======
+See [scope](physics.md), [native calibration](calibration.md) and [references](references.md). Orchestration/IO tests do not execute Ansys or validate your physical model.
+>>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4

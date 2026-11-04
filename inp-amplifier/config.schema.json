@@ -4,25 +4,17 @@
       "additionalProperties": false,
       "properties": {
         "element": {
+          "minLength": 1,
           "title": "Element",
           "type": "string"
         },
         "property": {
+          "minLength": 1,
           "title": "Property",
           "type": "string"
         },
         "quantity": {
-          "enum": [
-            "source.frequency_Hz",
-            "source.power_W",
-            "device.current_A",
-            "device.length_m",
-            "device.width_m",
-            "device.active_thickness_m",
-            "device.active_volume_m3",
-            "thermal.ambient_K",
-            "material.linewidth_enhancement_factor"
-          ],
+          "minLength": 1,
           "title": "Quantity",
           "type": "string"
         }
@@ -39,10 +31,12 @@
       "additionalProperties": false,
       "properties": {
         "element": {
+          "minLength": 1,
           "title": "Element",
           "type": "string"
         },
         "property": {
+          "minLength": 1,
           "title": "Property",
           "type": "string"
         },
@@ -76,14 +70,17 @@
       "additionalProperties": false,
       "properties": {
         "element": {
+          "minLength": 1,
           "title": "Element",
           "type": "string"
         },
         "result": {
+          "minLength": 1,
           "title": "Result",
           "type": "string"
         },
         "label": {
+          "minLength": 1,
           "title": "Label",
           "type": "string"
         }
@@ -128,102 +125,9 @@
           "minimum": 0,
           "title": "Current Ma",
           "type": "number"
-        },
-        "injection_efficiency": {
-          "default": 0.7,
-          "exclusiveMinimum": 0,
-          "maximum": 1,
-          "title": "Injection Efficiency",
-          "type": "number"
-        },
-        "internal_loss_per_m": {
-          "default": 1500.0,
-          "minimum": 0,
-          "title": "Internal Loss Per M",
-          "type": "number"
-        },
-        "input_loss_dB": {
-          "default": 1.5,
-          "minimum": 0,
-          "title": "Input Loss Db",
-          "type": "number"
-        },
-        "output_loss_dB": {
-          "default": 1.5,
-          "minimum": 0,
-          "title": "Output Loss Db",
-          "type": "number"
-        },
-        "input_reflectivity": {
-          "default": 0.0001,
-          "exclusiveMaximum": 1,
-          "minimum": 0,
-          "title": "Input Reflectivity",
-          "type": "number"
-        },
-        "output_reflectivity": {
-          "default": 0.0001,
-          "exclusiveMaximum": 1,
-          "minimum": 0,
-          "title": "Output Reflectivity",
-          "type": "number"
         }
       },
       "title": "Device",
-      "type": "object"
-    },
-    "Layout": {
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "default": true,
-          "title": "Enabled",
-          "type": "boolean"
-        },
-        "taper_length_um": {
-          "default": 150.0,
-          "exclusiveMinimum": 0,
-          "title": "Taper Length Um",
-          "type": "number"
-        },
-        "port_width_um": {
-          "default": 0.8,
-          "exclusiveMinimum": 0,
-          "title": "Port Width Um",
-          "type": "number"
-        },
-        "pad_size_um": {
-          "default": 80.0,
-          "exclusiveMinimum": 0,
-          "title": "Pad Size Um",
-          "type": "number"
-        },
-        "pad_offset_um": {
-          "default": 120.0,
-          "exclusiveMinimum": 0,
-          "title": "Pad Offset Um",
-          "type": "number"
-        },
-        "bus_width_um": {
-          "default": 1.0,
-          "exclusiveMinimum": 0,
-          "title": "Bus Width Um",
-          "type": "number"
-        },
-        "ring_width_um": {
-          "default": 1.5,
-          "exclusiveMinimum": 0,
-          "title": "Ring Width Um",
-          "type": "number"
-        },
-        "ring_gap_um": {
-          "default": 0.4,
-          "exclusiveMinimum": 0,
-          "title": "Ring Gap Um",
-          "type": "number"
-        }
-      },
-      "title": "Layout",
       "type": "object"
     },
     "Lumerical": {
@@ -294,6 +198,7 @@
             "output_osa"
           ],
           "items": {
+            "minLength": 1,
             "type": "string"
           },
           "title": "Inspect Elements",
@@ -331,6 +236,12 @@
           "default": 20.0,
           "exclusiveMinimum": 0,
           "title": "Taper Length Um",
+          "type": "number"
+        },
+        "input_width_um": {
+          "default": 0.8,
+          "exclusiveMinimum": 0,
+          "title": "Input Width Um",
           "type": "number"
         },
         "buffer_um": {
@@ -419,222 +330,9 @@
       "title": "LumericalMode",
       "type": "object"
     },
-    "Material": {
-      "additionalProperties": false,
-      "properties": {
-        "differential_gain_m2": {
-          "default": 2.5e-20,
-          "exclusiveMinimum": 0,
-          "title": "Differential Gain M2",
-          "type": "number"
-        },
-        "transparency_density_m3": {
-          "default": 1.5e+24,
-          "exclusiveMinimum": 0,
-          "title": "Transparency Density M3",
-          "type": "number"
-        },
-        "recombination_A_per_s": {
-          "default": 100000000.0,
-          "exclusiveMinimum": 0,
-          "title": "Recombination A Per S",
-          "type": "number"
-        },
-        "recombination_B_m3_per_s": {
-          "default": 1e-16,
-          "minimum": 0,
-          "title": "Recombination B M3 Per S",
-          "type": "number"
-        },
-        "recombination_C_m6_per_s": {
-          "default": 3e-41,
-          "minimum": 0,
-          "title": "Recombination C M6 Per S",
-          "type": "number"
-        },
-        "gain_peak_nm": {
-          "default": 1550.0,
-          "exclusiveMinimum": 0,
-          "title": "Gain Peak Nm",
-          "type": "number"
-        },
-        "gain_fwhm_nm": {
-          "default": 70.0,
-          "exclusiveMinimum": 0,
-          "title": "Gain Fwhm Nm",
-          "type": "number"
-        },
-        "gain_compression_per_W": {
-          "default": 5.0,
-          "minimum": 0,
-          "title": "Gain Compression Per W",
-          "type": "number"
-        },
-        "spontaneous_emission_factor": {
-          "default": 2.0,
-          "minimum": 1,
-          "title": "Spontaneous Emission Factor",
-          "type": "number"
-        },
-        "linewidth_enhancement_factor": {
-          "default": 5.0,
-          "minimum": 0,
-          "title": "Linewidth Enhancement Factor",
-          "type": "number"
-        },
-        "reference_temperature_K": {
-          "default": 300.0,
-          "exclusiveMinimum": 0,
-          "title": "Reference Temperature K",
-          "type": "number"
-        },
-        "transparency_temperature_scale_K": {
-          "default": 100.0,
-          "exclusiveMinimum": 0,
-          "title": "Transparency Temperature Scale K",
-          "type": "number"
-        },
-        "gain_peak_shift_nm_per_K": {
-          "default": 0.4,
-          "minimum": 0,
-          "title": "Gain Peak Shift Nm Per K",
-          "type": "number"
-        }
-      },
-      "title": "Material",
-      "type": "object"
-    },
-    "Microcomb": {
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "default": true,
-          "title": "Enabled",
-          "type": "boolean"
-        },
-        "link_loss_dB": {
-          "default": 2.0,
-          "minimum": 0,
-          "title": "Link Loss Db",
-          "type": "number"
-        },
-        "radius_um": {
-          "default": 100.0,
-          "exclusiveMinimum": 0,
-          "title": "Radius Um",
-          "type": "number"
-        },
-        "group_index": {
-          "default": 1.9,
-          "exclusiveMinimum": 0,
-          "title": "Group Index",
-          "type": "number"
-        },
-        "effective_index": {
-          "default": 1.9,
-          "exclusiveMinimum": 0,
-          "title": "Effective Index",
-          "type": "number"
-        },
-        "effective_area_um2": {
-          "default": 0.8,
-          "exclusiveMinimum": 0,
-          "title": "Effective Area Um2",
-          "type": "number"
-        },
-        "n2_m2_per_W": {
-          "default": 2.4e-19,
-          "exclusiveMinimum": 0,
-          "title": "N2 M2 Per W",
-          "type": "number"
-        },
-        "intrinsic_Q": {
-          "default": 2000000.0,
-          "exclusiveMinimum": 0,
-          "title": "Intrinsic Q",
-          "type": "number"
-        },
-        "coupling_Q": {
-          "default": 2000000.0,
-          "exclusiveMinimum": 0,
-          "title": "Coupling Q",
-          "type": "number"
-        },
-        "D2_MHz": {
-          "default": 2.0,
-          "title": "D2 Mhz",
-          "type": "number"
-        },
-        "D3_kHz": {
-          "default": 0.0,
-          "title": "D3 Khz",
-          "type": "number"
-        },
-        "detuning_start": {
-          "default": -2.0,
-          "title": "Detuning Start",
-          "type": "number"
-        },
-        "detuning_end": {
-          "default": 3.0,
-          "title": "Detuning End",
-          "type": "number"
-        },
-        "modes": {
-          "default": 256,
-          "maximum": 2048,
-          "minimum": 32,
-          "title": "Modes",
-          "type": "integer"
-        },
-        "time_step": {
-          "default": 0.002,
-          "exclusiveMinimum": 0,
-          "title": "Time Step",
-          "type": "number"
-        },
-        "scan_time": {
-          "default": 60.0,
-          "minimum": 0,
-          "title": "Scan Time",
-          "type": "number"
-        },
-        "hold_time": {
-          "default": 40.0,
-          "exclusiveMinimum": 0,
-          "title": "Hold Time",
-          "type": "number"
-        },
-        "record_every": {
-          "default": 100,
-          "minimum": 1,
-          "title": "Record Every",
-          "type": "integer"
-        },
-        "seed": {
-          "default": 7,
-          "minimum": 0,
-          "title": "Seed",
-          "type": "integer"
-        },
-        "field_noise_per_sqrt_tau": {
-          "default": 1e-05,
-          "minimum": 0,
-          "title": "Field Noise Per Sqrt Tau",
-          "type": "number"
-        }
-      },
-      "title": "Microcomb",
-      "type": "object"
-    },
     "Mode": {
       "additionalProperties": false,
       "properties": {
-        "enabled": {
-          "default": true,
-          "title": "Enabled",
-          "type": "boolean"
-        },
         "core_index": {
           "default": 3.4,
           "exclusiveMinimum": 0,
@@ -658,95 +356,9 @@
           "exclusiveMinimum": 0,
           "title": "Y Span Um",
           "type": "number"
-        },
-        "nx": {
-          "default": 121,
-          "maximum": 501,
-          "minimum": 21,
-          "title": "Nx",
-          "type": "integer"
-        },
-        "ny": {
-          "default": 101,
-          "maximum": 501,
-          "minimum": 21,
-          "title": "Ny",
-          "type": "integer"
-        },
-        "confinement_factor": {
-          "default": 0.25,
-          "exclusiveMinimum": 0,
-          "maximum": 1,
-          "title": "Confinement Factor",
-          "type": "number"
-        },
-        "effective_area_um2": {
-          "default": 1.0,
-          "exclusiveMinimum": 0,
-          "title": "Effective Area Um2",
-          "type": "number"
         }
       },
       "title": "Mode",
-      "type": "object"
-    },
-    "Numerics": {
-      "additionalProperties": false,
-      "properties": {
-        "z_cells": {
-          "default": 64,
-          "maximum": 1000,
-          "minimum": 4,
-          "title": "Z Cells",
-          "type": "integer"
-        },
-        "ase_bins": {
-          "default": 41,
-          "maximum": 501,
-          "minimum": 5,
-          "title": "Ase Bins",
-          "type": "integer"
-        },
-        "ase_bandwidth_nm": {
-          "default": 140.0,
-          "exclusiveMinimum": 0,
-          "title": "Ase Bandwidth Nm",
-          "type": "number"
-        },
-        "include_ase": {
-          "default": true,
-          "title": "Include Ase",
-          "type": "boolean"
-        },
-        "max_iterations": {
-          "default": 1500,
-          "maximum": 10000,
-          "minimum": 10,
-          "title": "Max Iterations",
-          "type": "integer"
-        },
-        "relative_tolerance": {
-          "default": 1e-06,
-          "exclusiveMinimum": 0,
-          "maximum": 0.01,
-          "title": "Relative Tolerance",
-          "type": "number"
-        },
-        "relaxation": {
-          "default": 0.15,
-          "exclusiveMinimum": 0,
-          "maximum": 0.5,
-          "title": "Relaxation",
-          "type": "number"
-        },
-        "osnr_bandwidth_nm": {
-          "default": 0.1,
-          "exclusiveMinimum": 0,
-          "title": "Osnr Bandwidth Nm",
-          "type": "number"
-        }
-      },
-      "title": "Numerics",
       "type": "object"
     },
     "Source": {
@@ -768,134 +380,71 @@
       "title": "Source",
       "type": "object"
     },
-    "Sweeps": {
+    "Sweep": {
       "additionalProperties": false,
       "properties": {
-        "enabled": {
-          "default": true,
-          "title": "Enabled",
-          "type": "boolean"
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
         },
-        "current_mA": {
-          "default": [
-            50.0,
-            100.0,
-            150.0,
-            200.0,
-            250.0,
-            300.0,
-            350.0
+        "solver": {
+          "enum": [
+            "mode",
+            "fdtd",
+            "interconnect"
           ],
+          "title": "Solver",
+          "type": "string"
+        },
+        "parameter": {
+          "minLength": 1,
+          "title": "Parameter",
+          "type": "string"
+        },
+        "values": {
           "items": {
-            "minimum": 0,
             "type": "number"
           },
           "maxItems": 100,
           "minItems": 1,
-          "title": "Current Ma",
-          "type": "array"
-        },
-        "input_power_mW": {
-          "default": [
-            0.01,
-            0.03,
-            0.1,
-            0.3,
-            1.0,
-            3.0,
-            10.0
-          ],
-          "items": {
-            "exclusiveMinimum": 0,
-            "type": "number"
-          },
-          "maxItems": 100,
-          "minItems": 1,
-          "title": "Input Power Mw",
+          "title": "Values",
           "type": "array"
         }
       },
-      "title": "Sweeps",
+      "required": [
+        "name",
+        "solver",
+        "parameter",
+        "values"
+      ],
+      "title": "Sweep",
       "type": "object"
     },
     "Thermal": {
       "additionalProperties": false,
       "properties": {
-        "enabled": {
-          "default": true,
-          "title": "Enabled",
-          "type": "boolean"
-        },
         "ambient_K": {
           "default": 300.0,
           "exclusiveMinimum": 0,
           "title": "Ambient K",
           "type": "number"
-        },
-        "resistance_K_per_W": {
-          "default": 30.0,
-          "minimum": 0,
-          "title": "Resistance K Per W",
-          "type": "number"
-        },
-        "junction_voltage_V": {
-          "default": 1.3,
-          "exclusiveMinimum": 0,
-          "title": "Junction Voltage V",
-          "type": "number"
         }
       },
       "title": "Thermal",
-      "type": "object"
-    },
-    "Transient": {
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "default": true,
-          "title": "Enabled",
-          "type": "boolean"
-        },
-        "initial_current_mA": {
-          "default": 125.0,
-          "minimum": 0,
-          "title": "Initial Current Ma",
-          "type": "number"
-        },
-        "step_time_ns": {
-          "default": 0.5,
-          "exclusiveMinimum": 0,
-          "title": "Step Time Ns",
-          "type": "number"
-        },
-        "duration_ns": {
-          "default": 5.0,
-          "exclusiveMinimum": 0,
-          "title": "Duration Ns",
-          "type": "number"
-        },
-        "samples": {
-          "default": 501,
-          "maximum": 10000,
-          "minimum": 50,
-          "title": "Samples",
-          "type": "integer"
-        }
-      },
-      "title": "Transient",
       "type": "object"
     }
   },
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": 1,
-      "default": 1,
+      "const": 2,
+      "default": 2,
       "title": "Schema Version",
       "type": "integer"
     },
     "name": {
-      "default": "Illustrative InP SOA pumping a SiN Kerr resonator",
+      "default": "InP pump amplifier - Lumerical only",
       "title": "Name",
       "type": "string"
     },
@@ -909,15 +458,12 @@
       "type": "string"
     },
     "calibration_notes": {
-      "default": "No measured device data; see docs/references.md.",
+      "default": "No measured device data; calibrate the native SOA/CML.",
       "title": "Calibration Notes",
       "type": "string"
     },
     "device": {
       "$ref": "#/$defs/Device"
-    },
-    "material": {
-      "$ref": "#/$defs/Material"
     },
     "source": {
       "$ref": "#/$defs/Source"
@@ -928,27 +474,39 @@
     "mode": {
       "$ref": "#/$defs/Mode"
     },
-    "numerics": {
-      "$ref": "#/$defs/Numerics"
-    },
-    "transient": {
-      "$ref": "#/$defs/Transient"
-    },
-    "microcomb": {
-      "$ref": "#/$defs/Microcomb"
-    },
-    "layout": {
-      "$ref": "#/$defs/Layout"
+    "parameters": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      },
+      "title": "Parameters",
+      "type": "object"
     },
     "sweeps": {
-      "$ref": "#/$defs/Sweeps"
+      "items": {
+        "$ref": "#/$defs/Sweep"
+      },
+      "title": "Sweeps",
+      "type": "array"
     },
     "lumerical": {
       "$ref": "#/$defs/Lumerical"
     },
     "extends": {
       "type": "string",
-      "description": "Parent YAML file, resolved relative to this file"
+      "description": "Parent YAML, relative to this file"
     }
   },
   "title": "Config",
