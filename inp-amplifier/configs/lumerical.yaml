@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=../config.schema.json
+# PRIMARY WORKFLOW: export native scripts, then run in licensed Ansys tools.
+extends: inp_pump.yaml
+name: InP pump amplifier - native Lumerical workflow
+lumerical:
+  hide_gui: false
+  # null = effective fixed indices from mode.*. Replace with exact material
+  # database names on your installation for dispersive passive materials.
+  core_material: null
+  cladding_material: null
+  mode:
+    trial_modes: 6
+    mesh_step_nm: 25.0
+    wavelength_start_nm: 1500.0
+    wavelength_stop_nm: 1600.0
+    wavelength_points: 21
+  fdtd:
+    # Short passive diagnostic coupon, NOT the full 1-mm active SOA.
+    # Separate from the concept layout taper until a real transition is selected.
+    taper_length_um: 20.0
+    buffer_um: 2.0
+    transverse_span_um: 4.0
+    vertical_span_um: 3.0
+    mesh_step_nm: 50.0
+    simulation_time_fs: 5000.0
+    wavelength_points: 21
+    max_estimated_cells: 20000000
+  interconnect:
+    # Create the circuit once using your native SOA or foundry CML model.
+    # Point this to the .icp file (relative paths are relative to THIS YAML).
+    # Exact model properties/results must be inspected on your installed version.
+    template_path: null
+    inspect_elements: [pump_laser, inp_soa, bias_current, output_osa]
+    bindings:
+      - element: pump_laser
+        property: frequency
+        quantity: source.frequency_Hz
+      - element: pump_laser
+        property: power
+        quantity: source.power_W
+      - element: bias_current
+        property: amplitude
+        quantity: device.current_A
+    # Add verified native SOA properties here, e.g. a length binding IF your
+    # selected SOA exposes that property. Width/length changes in MODE do not
+    # automatically recalibrate a circuit SOA model.
+    fixed_properties: []
+    results:
+      - element: output_osa
+        result: spectrum
+        label: output_spectrum

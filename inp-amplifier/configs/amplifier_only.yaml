@@ -1,0 +1,5 @@
+# yaml-language-server: $schema=../config.schema.json
+extends: inp_pump.yaml
+name: InP amplifier only - calibrate this before studying the resonator
+microcomb:
+  enabled: false

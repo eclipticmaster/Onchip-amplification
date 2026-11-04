@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=../config.schema.json
+# Example of inheritance: all omitted settings come from inp_pump.yaml.
+extends: inp_pump.yaml
+name: Higher current InP pump comparison
+device:
+  current_mA: 350.0

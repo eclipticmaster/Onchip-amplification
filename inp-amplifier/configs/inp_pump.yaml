@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=../config.schema.json
+# CW laser -> InGaAsP/InP SOA -> hybrid link -> SiN Kerr microresonator.
+# All numeric inputs have units in their keys. These are NOT a foundry stack.
+schema_version: 1
+name: Illustrative InP amplifier pumping a SiN microcomb
+parameter_status: illustrative
+calibration_notes: >-
+  Effective InGaAsP active region on InP; literature-guided model families,
+  with unmeasured example coefficients. See docs/references.md for provenance
+  and docs/physics.md for equations and limits.
+
+source:
+  wavelength_nm: 1550.0
+  input_power_mW: 1.0
+
+device:
+  length_um: 1000.0              # Electrically pumped length, excluding tapers
+  width_um: 2.0                  # Shared by active volume, mode and layout
+  core_thickness_um: 0.4        # Effective optical core, not an epitaxial recipe
+  active_thickness_um: 0.12     # Effective carrier volume; no separate QW capture
+  current_mA: 250.0
+  injection_efficiency: 0.7
+  internal_loss_per_m: 1500.0   # POWER attenuation; 4.343*alpha/100 = dB/cm
+  input_loss_dB: 1.5
+  output_loss_dB: 1.5
+  input_reflectivity: 0.0001     # POWER reflectivity; feedback diagnostic only
+  output_reflectivity: 0.0001
+
+material:
+  differential_gain_m2: 2.5e-20
+  transparency_density_m3: 1.5e+24
+  recombination_A_per_s: 1.0e+8
+  recombination_B_m3_per_s: 1.0e-16
+  recombination_C_m6_per_s: 3.0e-41
+  gain_peak_nm: 1550.0
+  gain_fwhm_nm: 70.0
+  gain_compression_per_W: 5.0
+  spontaneous_emission_factor: 2.0  # Fixed phenomenological n_sp; not full band theory
+  linewidth_enhancement_factor: 5.0
+  reference_temperature_K: 300.0
+  transparency_temperature_scale_K: 100.0
+  gain_peak_shift_nm_per_K: 0.4
+
+thermal:
+  enabled: true
+  ambient_K: 300.0
+  resistance_K_per_W: 30.0
+  junction_voltage_V: 1.3
+
+mode:
+  enabled: true                  # Scalar 2-D finite-difference mode
+  core_index: 3.4
+  cladding_index: 3.17
+  x_span_um: 8.0
+  y_span_um: 4.0
+  nx: 121
+  ny: 101
+  # Used ONLY when enabled=false, e.g. importing a vector-mode calculation:
+  confinement_factor: 0.25
+  effective_area_um2: 1.0
+
+numerics:
+  z_cells: 64
+  ase_bins: 41
+  ase_bandwidth_nm: 140.0
+  include_ase: true
+  max_iterations: 1500
+  relative_tolerance: 1.0e-6
+  relaxation: 0.15
+  osnr_bandwidth_nm: 0.1
+
+transient:
+  enabled: true
+  initial_current_mA: 125.0
+  step_time_ns: 0.5
+  duration_ns: 5.0
+  samples: 501
+
+microcomb:
+  enabled: true
+  link_loss_dB: 2.0              # SOA output -> resonator bus, including hybrid link
+  radius_um: 100.0
+  group_index: 1.9
+  effective_index: 1.9
+  effective_area_um2: 0.8
+  n2_m2_per_W: 2.4e-19           # Illustrative stoichiometric SiN value
+  intrinsic_Q: 2.0e+6
+  coupling_Q: 2.0e+6
+  D2_MHz: 2.0                   # D2/(2*pi); positive = anomalous in this convention
+  D3_kHz: 0.0
+  detuning_start: -2.0          # alpha=2*(omega_cold - omega_pump)/kappa
+  detuning_end: 3.0
+  modes: 256
+  time_step: 0.002              # Maximum step in tau=kappa*t/2; dispersion can shorten it
+  scan_time: 60.0
+  hold_time: 40.0
+  record_every: 100
+  seed: 7
+  field_noise_per_sqrt_tau: 1.0e-5  # Numerical symmetry-breaking noise, NOT SOA ASE
+
+layout:
+  enabled: true
+  taper_length_um: 150.0
+  port_width_um: 0.8
+  pad_size_um: 80.0
+  pad_offset_um: 120.0
+  bus_width_um: 1.0
+  ring_width_um: 1.5
+  ring_gap_um: 0.4               # Schematic; does NOT calculate coupling_Q
+
+sweeps:
+  enabled: true
+  current_mA: [50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0]
+  input_power_mW: [0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0]
