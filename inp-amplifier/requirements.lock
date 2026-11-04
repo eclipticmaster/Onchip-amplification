@@ -1,12 +1,10 @@
-# Tested Python 3.12 environment; runtime + test/build dependencies.
-# Regenerate deliberately after verifying physics tests and example runs.
-PyYAML==6.0.3
-Pygments==2.21.0
+# Tested Python 3.12 automation, native-result IO/plotting, test/build tools.
+# SciPy is used only for MATLAB file IO; no Python physics solver is present.
 annotated-types==0.8.0
 contourpy==1.4.0
 cycler==0.12.1
 fonttools==4.68.0
-gdstk==1.0.2
+h5py==3.16.0
 iniconfig==2.3.1
 kiwisolver==1.5.1
 matplotlib==3.11.2
@@ -16,9 +14,11 @@ pillow==13.0.0
 pluggy==1.7.0
 pydantic==2.14.2
 pydantic_core==2.50.2
+Pygments==2.21.0
 pyparsing==3.3.3
 pytest==9.2.0
 python-dateutil==4.0.0
+PyYAML==6.0.3
 scipy==1.18.1
 setuptools==80.9.0
 typing-inspection==0.4.4

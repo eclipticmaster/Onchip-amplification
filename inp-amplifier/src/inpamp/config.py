@@ -1,4 +1,4 @@
-"""Strict, unit-explicit YAML inputs; errors never silently select a default."""
+"""Native Lumerical inputs and SI unit conversions; no physics simulation."""
 from __future__ import annotations
 
 from copy import deepcopy
@@ -10,8 +10,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Positive = Annotated[float, Field(gt=0)]
 Nonnegative = Annotated[float, Field(ge=0)]
-Fraction = Annotated[float, Field(gt=0, le=1)]
-Reflectivity = Annotated[float, Field(ge=0, lt=1)]
+Name = Annotated[str, Field(min_length=1)]
+NativeValue = float | int | str | bool
+Solver = Literal["mode", "fdtd", "interconnect"]
 
 
 class Model(BaseModel):
@@ -24,12 +25,6 @@ class Device(Model):
     core_thickness_um: Positive = 0.4
     active_thickness_um: Positive = 0.12
     current_mA: Nonnegative = 250.0
-    injection_efficiency: Fraction = 0.7
-    internal_loss_per_m: Nonnegative = 1500.0
-    input_loss_dB: Nonnegative = 1.5
-    output_loss_dB: Nonnegative = 1.5
-    input_reflectivity: Reflectivity = 0.0001
-    output_reflectivity: Reflectivity = 0.0001
 
     @model_validator(mode="after")
     def active_inside_core(self):
@@ -38,121 +33,21 @@ class Device(Model):
         return self
 
 
-class Material(Model):
-    # Effective InGaAsP active region on an InP platform, not bulk-InP gain.
-    differential_gain_m2: Positive = 2.5e-20
-    transparency_density_m3: Positive = 1.5e24
-    recombination_A_per_s: Positive = 1.0e8
-    recombination_B_m3_per_s: Nonnegative = 1.0e-16
-    recombination_C_m6_per_s: Nonnegative = 3.0e-41
-    gain_peak_nm: Positive = 1550.0
-    gain_fwhm_nm: Positive = 70.0
-    gain_compression_per_W: Nonnegative = 5.0
-    spontaneous_emission_factor: Annotated[float, Field(ge=1)] = 2.0
-    linewidth_enhancement_factor: Nonnegative = 5.0
-    reference_temperature_K: Positive = 300.0
-    transparency_temperature_scale_K: Positive = 100.0
-    gain_peak_shift_nm_per_K: Nonnegative = 0.4
-
-
 class Source(Model):
     wavelength_nm: Positive = 1550.0
     input_power_mW: Positive = 1.0
 
 
 class Thermal(Model):
-    enabled: bool = True
+    # An input to a native model when bound; no Python heating calculation.
     ambient_K: Positive = 300.0
-    resistance_K_per_W: Nonnegative = 30.0
-    junction_voltage_V: Positive = 1.3
 
 
 class Mode(Model):
-    enabled: bool = True
     core_index: Positive = 3.4
     cladding_index: Positive = 3.17
     x_span_um: Positive = 8.0
     y_span_um: Positive = 4.0
-    nx: Annotated[int, Field(ge=21, le=501)] = 121
-    ny: Annotated[int, Field(ge=21, le=501)] = 101
-    # Used only if enabled=false; can be replaced by a vector solver/measurement.
-    confinement_factor: Fraction = 0.25
-    effective_area_um2: Positive = 1.0
-
-
-class Numerics(Model):
-    z_cells: Annotated[int, Field(ge=4, le=1000)] = 64
-    ase_bins: Annotated[int, Field(ge=5, le=501)] = 41
-    ase_bandwidth_nm: Positive = 140.0
-    include_ase: bool = True
-    max_iterations: Annotated[int, Field(ge=10, le=10000)] = 1500
-    relative_tolerance: Annotated[float, Field(gt=0, le=0.01)] = 1.0e-6
-    relaxation: Annotated[float, Field(gt=0, le=0.5)] = 0.15
-    osnr_bandwidth_nm: Positive = 0.1
-
-
-class Transient(Model):
-    enabled: bool = True
-    initial_current_mA: Nonnegative = 125.0
-    step_time_ns: Positive = 0.5
-    duration_ns: Positive = 5.0
-    samples: Annotated[int, Field(ge=50, le=10000)] = 501
-
-    @model_validator(mode="after")
-    def step_in_window(self):
-        if self.step_time_ns >= self.duration_ns:
-            raise ValueError("step_time_ns must be less than duration_ns")
-        return self
-
-
-class Microcomb(Model):
-    enabled: bool = True
-    link_loss_dB: Nonnegative = 2.0
-    radius_um: Positive = 100.0
-    group_index: Positive = 1.9
-    effective_index: Positive = 1.9
-    effective_area_um2: Positive = 0.8
-    n2_m2_per_W: Positive = 2.4e-19
-    intrinsic_Q: Positive = 2.0e6
-    coupling_Q: Positive = 2.0e6
-    D2_MHz: float = 2.0
-    D3_kHz: float = 0.0
-    detuning_start: float = -2.0
-    detuning_end: float = 3.0
-    modes: Annotated[int, Field(ge=32, le=2048)] = 256
-    time_step: Positive = 0.002
-    scan_time: Nonnegative = 60.0
-    hold_time: Positive = 40.0
-    record_every: Annotated[int, Field(ge=1)] = 100
-    seed: Annotated[int, Field(ge=0)] = 7
-    field_noise_per_sqrt_tau: Nonnegative = 1.0e-5
-
-    @model_validator(mode="after")
-    def reasonable_grid(self):
-        if self.modes & (self.modes - 1):
-            raise ValueError("microcomb.modes must be a power of two")
-        if (self.scan_time + self.hold_time) / self.time_step > 2_000_000:
-            raise ValueError("LLE exceeds 2 million steps; shorten time or increase time_step")
-        if self.time_step > 0.05:
-            raise ValueError("microcomb.time_step must be <= 0.05")
-        return self
-
-
-class Layout(Model):
-    enabled: bool = True
-    taper_length_um: Positive = 150.0
-    port_width_um: Positive = 0.8
-    pad_size_um: Positive = 80.0
-    pad_offset_um: Positive = 120.0
-    bus_width_um: Positive = 1.0
-    ring_width_um: Positive = 1.5
-    ring_gap_um: Positive = 0.4
-
-
-class Sweeps(Model):
-    enabled: bool = True
-    current_mA: Annotated[list[Nonnegative], Field(min_length=1, max_length=100)] = [50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0]
-    input_power_mW: Annotated[list[Positive], Field(min_length=1, max_length=100)] = [0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0]
 
 
 class LumericalMode(Model):
@@ -164,8 +59,8 @@ class LumericalMode(Model):
 
 
 class LumericalFDTD(Model):
-    # Passive transition coupon, not a millimetre-long active-gain FDTD run.
     taper_length_um: Positive = 20.0
+    input_width_um: Positive = 0.8
     buffer_um: Annotated[float, Field(ge=1)] = 2.0
     transverse_span_um: Positive = 4.0
     vertical_span_um: Positive = 3.0
@@ -176,28 +71,26 @@ class LumericalFDTD(Model):
 
 
 class CircuitBinding(Model):
-    element: str
-    property: str
-    quantity: Literal["source.frequency_Hz", "source.power_W", "device.current_A", "device.length_m", "device.width_m", "device.active_thickness_m", "device.active_volume_m3", "thermal.ambient_K", "material.linewidth_enhancement_factor"]
+    element: Name
+    property: Name
+    quantity: Name
 
 
 class CircuitProperty(Model):
-    element: str
-    property: str
-    value: float | int | str | bool
+    element: Name
+    property: Name
+    value: NativeValue
 
 
 class CircuitResult(Model):
-    element: str
-    result: str
-    label: str
+    element: Name
+    result: Name
+    label: Name
 
 
 class LumericalCircuit(Model):
-    # A licensed native SOA model/template is required for an actual active run.
-    # Exact property/result names depend on the chosen SOA/CML and version.
     template_path: str | None = None
-    inspect_elements: list[str] = ["pump_laser", "inp_soa", "bias_current", "output_osa"]
+    inspect_elements: list[Name] = ["pump_laser", "inp_soa", "bias_current", "output_osa"]
     bindings: list[CircuitBinding] = Field(default_factory=lambda: [
         CircuitBinding(element="pump_laser", property="frequency", quantity="source.frequency_Hz"),
         CircuitBinding(element="pump_laser", property="power", quantity="source.power_W"),
@@ -218,21 +111,24 @@ class Lumerical(Model):
     interconnect: LumericalCircuit = Field(default_factory=LumericalCircuit)
 
 
+class Sweep(Model):
+    name: Name
+    solver: Solver
+    parameter: Name
+    values: Annotated[list[float], Field(min_length=1, max_length=100)]
+
+
 class Config(Model):
-    schema_version: Literal[1] = 1
-    name: str = "Illustrative InP SOA pumping a SiN Kerr resonator"
+    schema_version: Literal[2] = 2
+    name: str = "InP pump amplifier - Lumerical only"
     parameter_status: Literal["illustrative", "calibrated"] = "illustrative"
-    calibration_notes: str = "No measured device data; see docs/references.md."
+    calibration_notes: str = "No measured device data; calibrate the native SOA/CML."
     device: Device = Field(default_factory=Device)
-    material: Material = Field(default_factory=Material)
     source: Source = Field(default_factory=Source)
     thermal: Thermal = Field(default_factory=Thermal)
     mode: Mode = Field(default_factory=Mode)
-    numerics: Numerics = Field(default_factory=Numerics)
-    transient: Transient = Field(default_factory=Transient)
-    microcomb: Microcomb = Field(default_factory=Microcomb)
-    layout: Layout = Field(default_factory=Layout)
-    sweeps: Sweeps = Field(default_factory=Sweeps)
+    parameters: dict[str, NativeValue] = Field(default_factory=dict)
+    sweeps: list[Sweep] = Field(default_factory=list)
     lumerical: Lumerical = Field(default_factory=Lumerical)
 
     @model_validator(mode="after")
@@ -240,25 +136,45 @@ class Config(Model):
         if self.mode.core_index <= self.mode.cladding_index:
             raise ValueError("mode.core_index must exceed mode.cladding_index")
         if self.mode.x_span_um <= self.device.width_um or self.mode.y_span_um <= self.device.core_thickness_um:
-            raise ValueError("mode simulation window must surround the core")
-        if self.material.gain_peak_nm <= self.numerics.ase_bandwidth_nm / 2:
-            raise ValueError("ASE wavelength range must be positive")
-        if self.layout.pad_offset_um <= self.layout.pad_size_um / 2 + self.device.width_um:
-            raise ValueError("layout.pad_offset_um must leave clearance for the optical ridge")
-        if self.layout.ring_width_um >= self.microcomb.radius_um:
-            raise ValueError("layout.ring_width_um must be smaller than the ring radius")
-        if self.parameter_status == "calibrated" and self.calibration_notes.startswith("No measured"):
-            raise ValueError("Provide calibration_notes identifying measured data for calibrated parameters")
+            raise ValueError("MODE window must surround the core")
         if self.lumerical.mode.wavelength_stop_nm <= self.lumerical.mode.wavelength_start_nm:
             raise ValueError("Lumerical stop wavelength must exceed start wavelength")
-        if self.lumerical.fdtd.transverse_span_um <= max(self.device.width_um, self.layout.port_width_um):
+        if self.lumerical.fdtd.transverse_span_um <= max(self.device.width_um, self.lumerical.fdtd.input_width_um):
             raise ValueError("FDTD transverse span must exceed both taper widths")
         if self.lumerical.fdtd.vertical_span_um <= self.device.core_thickness_um:
             raise ValueError("FDTD vertical span must exceed core thickness")
-        labels = [r.label for r in self.lumerical.interconnect.results]
+        if any(not key.isidentifier() or not key.isascii() for key in self.parameters):
+            raise ValueError("Native parameter keys must be ASCII identifiers")
+        available = quantities(self)
+        circuit = self.lumerical.interconnect
+        for binding in circuit.bindings:
+            if binding.quantity not in available:
+                raise ValueError(f"Unknown native binding quantity: {binding.quantity}")
+        targets = [(b.element, b.property) for b in [*circuit.bindings, *circuit.fixed_properties]]
+        if len(set(targets)) != len(targets):
+            raise ValueError("Each native element/property may be set only once")
+        labels = [r.label for r in circuit.results]
         if len(labels) != len(set(labels)) or any(not s.isidentifier() or not s.isascii() for s in labels):
             raise ValueError("INTERCONNECT result labels must be unique ASCII identifiers")
+        if len({s.name for s in self.sweeps}) != len(self.sweeps):
+            raise ValueError("Native sweep names must be unique")
+        for sweep in self.sweeps:
+            if not sweep.name.isidentifier() or not sweep.name.isascii():
+                raise ValueError("Sweep names must be ASCII identifiers")
         return self
+
+
+def quantities(c: Config):
+    """Dimension/unit conversion only. Gain, carriers and propagation stay native."""
+    return {"source.frequency_Hz": 299792458 / (c.source.wavelength_nm * 1e-9),
+            "source.power_W": c.source.input_power_mW * 1e-3,
+            "device.current_A": c.device.current_mA * 1e-3,
+            "device.length_m": c.device.length_um * 1e-6,
+            "device.width_m": c.device.width_um * 1e-6,
+            "device.active_thickness_m": c.device.active_thickness_um * 1e-6,
+            "device.active_volume_m3": c.device.length_um * c.device.width_um * c.device.active_thickness_um * 1e-18,
+            "thermal.ambient_K": c.thermal.ambient_K,
+            **{f"parameters.{k}": v for k, v in c.parameters.items()}}
 
 
 class UniqueLoader(yaml.SafeLoader):
@@ -269,6 +185,8 @@ def _mapping(loader, node, deep=False):
     result = {}
     for key_node, value_node in node.value:
         key = loader.construct_object(key_node, deep=deep)
+        if not isinstance(key, str):
+            raise ValueError("YAML keys must be strings")
         if key in result:
             raise ValueError(f"Duplicate YAML key: {key}")
         result[key] = loader.construct_object(value_node, deep=deep)
@@ -300,8 +218,24 @@ def read_yaml(path: Path, chain=()):
     return data
 
 
+def with_override(c: Config, parameter, value):
+    data = c.model_dump()
+    parts = parameter.split(".")
+    target = data
+    for part in parts[:-1]:
+        if not isinstance(target, dict) or part not in target:
+            raise ValueError(f"Unknown sweep parameter: {parameter}")
+        target = target[part]
+    if not isinstance(target, dict) or parts[-1] not in target:
+        raise ValueError(f"Unknown sweep parameter: {parameter}")
+    target[parts[-1]] = value
+    return Config.model_validate(data)
+
+
 def load_config(path: str | Path, overrides=()) -> Config:
     data = read_yaml(Path(path))
+    if data.get("schema_version") == 1:
+        raise ValueError("Schema v1 included retired Python simulation settings. Use the v2 examples; simulation now runs only in Lumerical.")
     for override in overrides:
         key, sep, value = override.partition("=")
         parts = key.split(".")

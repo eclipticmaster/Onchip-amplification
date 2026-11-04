@@ -29,7 +29,6 @@ set("index",3.4);
 set("override mesh order from material database",1);
 set("mesh order",1);
 addfde;
-set("name","FDE");
 set("solver type",3);
 set("x",0); set("x span",8e-06);
 set("y",0); set("y span",4e-06);
@@ -50,7 +49,17 @@ x=getdata("mode1","x"); y=getdata("mode1","y");
 Ex=getdata("mode1","Ex"); Ey=getdata("mode1","Ey"); Ez=getdata("mode1","Ez");
 Hx=getdata("mode1","Hx"); Hy=getdata("mode1","Hy");
 neff=getdata("mode1","neff");
-matlabsave("mode_fields.mat",x,y,Ex,Ey,Ez,Hx,Hy,neff);
+# Field intensity, flux overlap and area are computed IN LUMERICAL.
+E2=pinch(abs(Ex)^2+abs(Ey)^2+abs(Ez)^2);
+Sz=pinch(0.5*real(Ex*conj(Hy)-Ey*conj(Hx)));
+X=meshgridx(x,y); Y=meshgridy(x,y);
+active_mask=(abs(X)<=1e-06) & (abs(Y)<=5.999999999999999e-08);
+Ptotal=integrate2(Sz,[1,2],x,y);
+if (abs(Ptotal)<1e-30) { error("MODE returned no propagating modal power."); }
+Gamma=real(integrate2(Sz*active_mask,[1,2],x,y)/Ptotal);
+Aeff=real(integrate2(E2,[1,2],x,y)^2/integrate2(E2^2,[1,2],x,y));
+matlabsave("mode_fields.mat",x,y,E2,Ex,Ey,Ez,Hx,Hy,neff);
+matlabsave("mode_metrics.mat",neff,Gamma,Aeff);
 selectmode(1);
 setanalysis("track selected mode",1);
 setanalysis("detailed dispersion calculation",1);

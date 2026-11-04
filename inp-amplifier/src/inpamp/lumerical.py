@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .config import Config
+from .config import Config, quantities
 
 
 def quote(value):
@@ -24,6 +24,10 @@ def quote(value):
 
 def number(value):
     return format(float(value), ".16g")
+
+
+def literal(value):
+    return quote(value) if isinstance(value, str) else number(value)
 
 
 def setprop(prop, value):
@@ -56,7 +60,6 @@ deleteall;
 {rectangle("InP_cladding", (xs * 1.1, ys * 1.1, 1e-6), (0, 0, 0), c.mode.cladding_index, 3, c.lumerical.cladding_material)}
 {rectangle("effective_active_core", (width, thickness, 1e-6), (0, 0, 0), c.mode.core_index, 1, c.lumerical.core_material)}
 addfde;
-set("name","FDE");
 set("solver type",3);
 set("x",0); set("x span",{number(xs)});
 set("y",0); set("y span",{number(ys)});
@@ -77,7 +80,17 @@ x=getdata("mode1","x"); y=getdata("mode1","y");
 Ex=getdata("mode1","Ex"); Ey=getdata("mode1","Ey"); Ez=getdata("mode1","Ez");
 Hx=getdata("mode1","Hx"); Hy=getdata("mode1","Hy");
 neff=getdata("mode1","neff");
-matlabsave("mode_fields.mat",x,y,Ex,Ey,Ez,Hx,Hy,neff);
+# Field intensity, flux overlap and area are computed IN LUMERICAL.
+E2=pinch(abs(Ex)^2+abs(Ey)^2+abs(Ez)^2);
+Sz=pinch(0.5*real(Ex*conj(Hy)-Ey*conj(Hx)));
+X=meshgridx(x,y); Y=meshgridy(x,y);
+active_mask=(abs(X)<={number(width / 2)}) & (abs(Y)<={number(d.active_thickness_um * .5e-6)});
+Ptotal=integrate2(Sz,[1,2],x,y);
+if (abs(Ptotal)<1e-30) {{ error("MODE returned no propagating modal power."); }}
+Gamma=real(integrate2(Sz*active_mask,[1,2],x,y)/Ptotal);
+Aeff=real(integrate2(E2,[1,2],x,y)^2/integrate2(E2^2,[1,2],x,y));
+matlabsave("mode_fields.mat",x,y,E2,Ex,Ey,Ez,Hx,Hy,neff);
+matlabsave("mode_metrics.mat",neff,Gamma,Aeff);
 selectmode(1);
 setanalysis("track selected mode",1);
 setanalysis("detailed dispersion calculation",1);
@@ -96,7 +109,7 @@ save("inp_waveguide.lms");
 def fdtd_script(c: Config):
     f, d, m = c.lumerical.fdtd, c.device, c.lumerical.mode
     length, buffer = f.taper_length_um * 1e-6, f.buffer_um * 1e-6
-    win, wout = c.layout.port_width_um * 1e-6, d.width_um * 1e-6
+    win, wout = f.input_width_um * 1e-6, d.width_um * 1e-6
     thick = d.core_thickness_um * 1e-6
     ys, zs = f.transverse_span_um * 1e-6, f.vertical_span_um * 1e-6
     mesh = f.mesh_step_nm * 1e-9
@@ -157,18 +170,6 @@ save("inp_taper.fsp");
 '''
 
 
-def quantities(c):
-    return {"source.frequency_Hz": 299792458 / (c.source.wavelength_nm * 1e-9),
-            "source.power_W": c.source.input_power_mW * 1e-3,
-            "device.current_A": c.device.current_mA * 1e-3,
-            "device.length_m": c.device.length_um * 1e-6,
-            "device.width_m": c.device.width_um * 1e-6,
-            "device.active_thickness_m": c.device.active_thickness_um * 1e-6,
-            "device.active_volume_m3": c.device.length_um * c.device.width_um * c.device.active_thickness_um * 1e-18,
-            "thermal.ambient_K": c.thermal.ambient_K,
-            "material.linewidth_enhancement_factor": c.material.linewidth_enhancement_factor}
-
-
 def interconnect_script(c: Config):
     circuit = c.lumerical.interconnect
     values = quantities(c)
@@ -179,7 +180,7 @@ def interconnect_script(c: Config):
              "# No scalar/Python gain is injected into this native model.",
              'load("SOA_TEMPLATE.icp");', "switchtodesign;"]
     for binding in circuit.bindings:
-        lines.append(f"setnamed({quote(binding.element)},{quote(binding.property)},{number(values[binding.quantity])});")
+        lines.append(f"setnamed({quote(binding.element)},{quote(binding.property)},{literal(values[binding.quantity])});")
     for fixed in circuit.fixed_properties:
         value = quote(fixed.value) if isinstance(fixed.value, str) else number(fixed.value)
         lines.append(f"setnamed({quote(fixed.element)},{quote(fixed.property)},{value});")
@@ -212,7 +213,7 @@ def export_lumerical(c: Config, output: Path):
                              "template_configured": bool(c.lumerical.interconnect.template_path),
                              "project_created_when_run": "inp_pump.icp"},
             "microcomb": {"status": "no_native_kerr_comb_solver_exported",
-                          "note": "The included Python LLE is an optional separate reference model, not a Lumerical result."},
+                          "requires": "A native nonlinear resonator model in the INTERCONNECT template. No Python comb simulation or fallback is provided."},
             "scope": "No licensed Lumerical simulation is implied by a successful export."}
     for name, text in [("mode.lsf", mode_script(c)), ("fdtd.lsf", fdtd_script(c)),
                        ("interconnect.lsf", interconnect_script(c))]:
@@ -245,6 +246,8 @@ def load_api(path=None):
 def _json_result(data):
     if isinstance(data, dict):
         return {str(k): _json_result(v) for k, v in data.items()}
+    if isinstance(data, (list, tuple)):
+        return [_json_result(value) for value in data]
     if isinstance(data, np.ndarray):
         if np.iscomplexobj(data):
             return {"real": data.real.tolist(), "imag": data.imag.tolist()}
@@ -308,7 +311,7 @@ def run_lumerical(c: Config, solver: str, output: Path, *, api_path=None, config
     status_path = output / "run_status.json"
     status_path.write_text(json.dumps(status, indent=2) + "\n")
     try:
-        constructor = {"mode": api.MODE, "fdtd": api.FDTD, "interconnect": api.INTERCONNECT}[solver]
+        constructor = getattr(api, {"mode": "MODE", "fdtd": "FDTD", "interconnect": "INTERCONNECT"}[solver])
         with constructor(hide=c.lumerical.hide_gui) as session:
             session.eval(f"cd({quote(output.as_posix())});")
             script = (output / f"{solver}.lsf").read_text()
@@ -322,19 +325,19 @@ def run_lumerical(c: Config, solver: str, output: Path, *, api_path=None, config
                 script = script.replace('load("SOA_TEMPLATE.icp");', f"load({quote(template.as_posix())});")
             session.eval(script)
             if solver == "mode":
-                _save_mode_metrics(session, c, output)
-                required = ["inp_waveguide.lms", "mode_fields.mat", "mode_dispersion.mat", "mode_metrics.json"]
+                _export_mode_data(session, output)
+                required = ["inp_waveguide.lms", "mode_fields.mat", "mode_dispersion.mat", "mode_metrics.mat", "mode_metrics.json"]
             elif solver == "fdtd":
-                from .artifacts import csv
+                from .results import write_csv
                 freq, t, r = [np.asarray(session.getv(key)).reshape(-1) for key in ["f", "T", "R"]]
                 if not (len(freq) == len(t) == len(r) and len(freq) >= 3 and np.all(np.isfinite(t)) and np.all(np.isfinite(r))):
                     raise RuntimeError("FDTD did not return finite transmission/reflection spectra")
-                csv(output / "taper_transmission.csv", {"wavelength_nm": 299792458 / freq * 1e9, "T_total_flux": t, "R_total_flux": r})
+                write_csv(output / "taper_transmission.csv", {"wavelength_nm": 299792458 / freq * 1e9, "T_total_flux": t, "R_total_flux": r})
                 required = ["inp_taper.fsp", "taper_transmission.mat", "taper_transmission.csv"]
             else:
                 for r in c.lumerical.interconnect.results:
                     data = session.getresult(r.element, r.result)
-                    if data is None or (isinstance(data, dict) and not data):
+                    if not _has_numeric_data(data):
                         raise RuntimeError(f"Native analyzer returned no data: {r.element}/{r.result}")
                     (output / f"{r.label}.json").write_text(json.dumps(_json_result(data), indent=2, allow_nan=False) + "\n")
                 required = ["inp_pump.icp", *[r.label + ".mat" for r in c.lumerical.interconnect.results]]
@@ -351,43 +354,28 @@ def run_lumerical(c: Config, solver: str, output: Path, *, api_path=None, config
     return status
 
 
-def _save_mode_metrics(session, c, output):
-    # Native vector fields. This uses power flux for active-region overlap.
-    x, y = [np.asarray(session.getv(key)).reshape(-1) for key in ["x", "y"]]
-    nx, ny = len(x), len(y)
+def _has_numeric_data(data):
+    """Check a returned dataset, never generate replacement data."""
+    if isinstance(data, dict):
+        return any(_has_numeric_data(v) for k, v in data.items() if k != "Lumerical_dataset")
+    if isinstance(data, (list, tuple)):
+        return any(_has_numeric_data(v) for v in data)
+    if isinstance(data, (np.ndarray, int, float, complex, np.number)):
+        array = np.asarray(data)
+        return array.size > 0 and array.dtype.kind in "iufc" and bool(np.all(np.isfinite(array)))
+    return False
 
-    def field(key):
-        array = np.asarray(session.getv(key)).squeeze()
-        if array.shape == (nx, ny):
-            return array
-        if array.shape == (ny, nx):
-            return array.T
-        raise RuntimeError(f"Unexpected MODE field shape {array.shape}")
 
-    ex, ey, ez, hx, hy = [field(key) for key in ["Ex", "Ey", "Ez", "Hx", "Hy"]]
-    intensity = np.abs(ex)**2 + np.abs(ey)**2 + np.abs(ez)**2
-    flux = 0.5 * np.real(ex * np.conj(hy) - ey * np.conj(hx))
-    xx, yy = np.meshgrid(x, y, indexing="ij")
-    # Cell-average mask avoids silently missing a very thin active stripe.
-    dx, dy = np.gradient(x), np.gradient(y)
-    fx = np.clip((c.device.width_um * 0.5e-6 - np.abs(x)) / dx + 0.5, 0, 1)
-    fy = np.clip((c.device.active_thickness_um * 0.5e-6 - np.abs(y)) / dy + 0.5, 0, 1)
-    mask = fx[:, None] * fy[None, :]
-    trap = getattr(np, "trapezoid", None) or np.trapz
-
-    def integrate(a):
-        return trap(trap(a, x=y, axis=1), x=x, axis=0)
-
-    total_flux = float(integrate(flux))
-    if not np.isfinite(total_flux) or abs(total_flux) < np.finfo(float).tiny:
-        raise RuntimeError("MODE returned no finite propagating modal power")
-    gamma = float(integrate(flux * mask) / total_flux)
-    area = float(integrate(intensity)**2 / integrate(intensity**2))
-    neff = np.asarray(session.getv("neff")).squeeze()
-    metrics = dict(engine="Ansys Lumerical MODE vector FDE", mode="mode1 (verify TE-like identity in GUI)",
-                   neff_real=float(np.real(neff)), neff_imag=float(np.imag(neff)),
-                   active_power_overlap=gamma, scalar_field_area_um2=area * 1e12,
-                   note="Overlap is from native vector Poynting flux; area is the scalar |E| definition. Effective passive index geometry is not a resolved QW gain calculation.")
-    if not np.isfinite(area) or area <= 0 or not -0.01 <= gamma <= 1.01:
-        raise RuntimeError("Unphysical native-mode overlap/area; inspect mode identity and field coordinates")
-    (output / "mode_metrics.json").write_text(json.dumps(metrics, indent=2, allow_nan=False) + "\n")
+def _export_mode_data(session, output):
+    """Serialize metrics already calculated by the native LSF, without a solver."""
+    metrics = {name: np.asarray(session.getv(name)).squeeze() for name in ["neff", "Gamma", "Aeff"]}
+    if any(value.size != 1 or not np.all(np.isfinite(value)) for value in metrics.values()):
+        raise RuntimeError("MODE did not return finite scalar mode metrics")
+    gamma, area = float(np.real(metrics["Gamma"].item())), float(np.real(metrics["Aeff"].item()))
+    if not -0.01 <= gamma <= 1.01 or area <= 0:
+        raise RuntimeError("Native MODE overlap/area is invalid; inspect fields, mesh and selected mode")
+    neff = complex(metrics["neff"].item())
+    document = dict(engine="Ansys Lumerical MODE", neff_real=neff.real, neff_imag=neff.imag,
+                    active_power_overlap=gamma, scalar_field_area_m2=area,
+                    computation="Metrics calculated in mode.lsf; Python only serializes exported values.")
+    (output / "mode_metrics.json").write_text(json.dumps(document, indent=2, allow_nan=False) + "\n")

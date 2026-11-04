@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "inpamp"
-version = "0.1.0"
-description = "YAML-driven InP SOA and microcomb pump design studies"
+version = "0.2.0"
+description = "Lumerical-only InP amplifier simulation automation and native-result plotting"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=1.26,<3", "scipy>=1.13,<2", "matplotlib>=3.8,<4",
-  "PyYAML>=6,<7", "pydantic>=2.8,<3", "gdstk>=0.9.55,<2",
+  "PyYAML>=6,<7", "pydantic>=2.8,<3", "h5py>=3.11,<4",
 ]
 
 [project.optional-dependencies]
