@@ -68,7 +68,6 @@ Ppk_stretched = E_in / (shape_factor * tau_stretched)
 # ---------------------------------------------------------------------
 # 3. First-order amplifier
 # ---------------------------------------------------------------------
-# Replace Aeff with the value obtained from the MODE Python script.
 Aeff = 30e-12            # 30 um^2
 Gamma_Er = 0.80
 

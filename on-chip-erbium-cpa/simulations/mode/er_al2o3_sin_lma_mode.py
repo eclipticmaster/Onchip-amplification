@@ -53,29 +53,14 @@ import matplotlib.pyplot as plt
 # ---------------------------------------------------------------------
 # 0. Import lumapi
 # ---------------------------------------------------------------------
-def load_lumapi():
-    """Import lumapi, optionally using LUMERICAL_API_PATH."""
-    try:
-        import lumapi  # type: ignore
-        return lumapi
-    except ImportError:
-        api_path = os.environ.get("LUMERICAL_API_PATH")
-        if not api_path:
-            raise ImportError(
-                "\nCould not import 'lumapi'.\n"
-                "Either run this script from Lumerical's Python environment, "
-                "or set the environment variable LUMERICAL_API_PATH to the "
-                "folder containing lumapi.py.\n"
-                "Typical Windows location:\n"
-                r"  C:\Program Files\Ansys Inc\vXXX\Lumerical\api\python"
-                "\n"
-            )
-        sys.path.append(api_path)
-        import lumapi  # type: ignore
-        return lumapi
+import importlib.util
 
-
-lumapi = load_lumapi()
+spec = importlib.util.spec_from_file_location(
+    "lumapi",
+    "C:/Program Files/Ansys Inc/v261/Lumerical/api/python/lumapi.py",
+)
+lumapi = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(lumapi)
 
 
 # ---------------------------------------------------------------------
@@ -286,7 +271,6 @@ def build_geometry(mode):
 
     # FDE region: XY cross-section, propagation in z.
     fde = mode.addfde()
-    fde["name"] = "FDE"
     fde["solver type"] = 3
     fde["x"] = 0.0
     fde["x span"] = X_SPAN_SIM
@@ -449,6 +433,11 @@ def main():
 
         mode.setanalysis("track selected mode", 1)
         mode.setanalysis("detailed dispersion calculation", 1)
+        for prop in ("start wavelength", "start frequency"):
+            try:
+                print(f"{prop}: {mode.getanalysis(prop)}")
+            except lumapi.LumApiError as exc:
+                print(f"{prop} unavailable: {exc}")
         mode.setanalysis("start wavelength", LAMBDA_START)
         mode.setanalysis("stop wavelength", LAMBDA_STOP)
         mode.setanalysis("number of points", N_LAMBDA)
