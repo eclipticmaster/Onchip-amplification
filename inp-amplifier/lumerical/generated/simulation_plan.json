@@ -1,0 +1,31 @@
+{
+  "status": "scripts_generated_not_simulated",
+  "units": "SI in native LSF",
+  "mode": {
+    "product": "MODE",
+    "script": "mode.lsf",
+    "project_created_when_run": "inp_waveguide.lms",
+    "physics": "passive vector FDE modes and native tracked-mode dispersion; effective index cross-section"
+  },
+  "fdtd": {
+    "product": "FDTD",
+    "script": "fdtd.lsf",
+    "project_created_when_run": "inp_taper.fsp",
+    "physics": "passive 3-D taper transmission/reflection, not active SOA gain",
+    "estimated_uniform_mesh_cells": 2304000,
+    "cell_limit": 20000000,
+    "estimate_note": "Only a planning estimate; inspect actual mesh, memory and run time in Lumerical."
+  },
+  "interconnect": {
+    "product": "INTERCONNECT",
+    "script": "interconnect.lsf",
+    "requires": "A native SOA/CML template with verified bindings and semiconductor gain data",
+    "template_configured": false,
+    "project_created_when_run": "inp_pump.icp"
+  },
+  "microcomb": {
+    "status": "no_native_kerr_comb_solver_exported",
+    "note": "The included Python LLE is an optional separate reference model, not a Lumerical result."
+  },
+  "scope": "No licensed Lumerical simulation is implied by a successful export."
+}

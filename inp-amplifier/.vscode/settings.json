@@ -1,0 +1,3 @@
+{
+  "yaml.schemas": {"./config.schema.json": "configs/*.yaml"}
+}
