@@ -6,12 +6,13 @@ The former standalone Python CPA calculator has been removed to keep all physica
 
 For the new InP pump amplifier, use the [native YAML workflow](../inp-amplifier/README.md).
 
-To run this earlier MODE wrapper on a licensed machine:
+The current legacy wrapper loads `lumapi.py` from `C:/Program Files/Ansys Inc/v261/Lumerical/api/python/lumapi.py`, as configured in its import block. Keep that path for the matching installation or edit the import block for another installed version. The new InP workflow supports `LUMERICAL_API_PATH` and `--api-path` instead.
+
+From this directory on the matching licensed machine:
 
 ```powershell
-$env:LUMERICAL_API_PATH = "C:\Program Files\Ansys Inc\vXXX\Lumerical\api\python"
 python -m pip install -r requirements.txt
 python simulations/mode/er_al2o3_sin_lma_mode.py
 ```
 
-Replace the installation/version path. `lumapi` is supplied by Ansys, not pip. The original effective refractive indices/geometry remain educational placeholders; calibrate to the real material stack before interpreting native results. Outputs are written under `results/mode/`.
+`lumapi` is supplied by Ansys, not pip. The original effective refractive indices/geometry remain educational placeholders; calibrate to the real material stack before interpreting native results. Outputs are written under `results/mode/`.
