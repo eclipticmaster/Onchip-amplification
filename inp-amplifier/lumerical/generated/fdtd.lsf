@@ -47,7 +47,8 @@ set("material","<Object defined dielectric>");
 set("index",3.4);
 set("override mesh order from material database",1); set("mesh order",1);
 addfdtd;
-set("name","FDTD"); set("dimension","3D");
+# The built-in FDTD solver name is read-only.
+set("dimension","3D");
 set("x",0); set("x span",2.4e-05);
 set("y",0); set("y span",4e-06);
 set("z",0); set("z span",3e-06);

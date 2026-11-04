@@ -1,8 +1,8 @@
 # On-chip amplifier simulations
 
-## InP amplifier for a microcomb pump — Lumerical workflow
+## InP amplifier for a microcomb pump
 
-The [InP amplifier project](inp-amplifier/README.md) prepares editable YAML and native Ansys Lumerical scripts for a CW pump laser amplified by an InGaAsP/InP semiconductor optical amplifier before a microcomb.
+The [InP amplifier project](inp-amplifier/README.md) prepares editable YAML and native Ansys Lumerical scripts for a CW pump laser amplified by an Indium Phosphide (InP) semiconductor optical amplifier using a method of Chirped Pulse Amplification before a microcomb.
 
 - [Edit the Lumerical YAML](inp-amplifier/configs/lumerical.yaml) and inherited [device settings](inp-amplifier/configs/inp_pump.yaml).
 - [Follow the Lumerical guide](inp-amplifier/docs/lumerical.md): MODE vector modes/dispersion, FDTD passive taper transmission/reflection and INTERCONNECT native SOA/CML circuit automation.

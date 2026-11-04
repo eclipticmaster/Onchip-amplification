@@ -1,0 +1,8 @@
+{
+  "solver": "mode",
+  "status": "failed",
+  "results_verified": false,
+  "config_sha256": "4802d0ea452554705461b3abb140f723d3ab3ccb3ab59585224718adfe15e79b",
+  "api_module_path": "C:\\Program Files\\ANSYS Inc\\v261\\Lumerical\\api\\python\\lumapi.py",
+  "error": "'Failed to evaluate code'"
+}

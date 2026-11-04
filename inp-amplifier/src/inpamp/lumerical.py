@@ -56,7 +56,7 @@ deleteall;
 {rectangle("InP_cladding", (xs * 1.1, ys * 1.1, 1e-6), (0, 0, 0), c.mode.cladding_index, 3, c.lumerical.cladding_material)}
 {rectangle("effective_active_core", (width, thickness, 1e-6), (0, 0, 0), c.mode.core_index, 1, c.lumerical.core_material)}
 addfde;
-set("name","FDE");
+# The built-in FDE solver name is read-only.
 set("solver type",3);
 set("x",0); set("x span",{number(xs)});
 set("y",0); set("y span",{number(ys)});
@@ -78,12 +78,20 @@ Ex=getdata("mode1","Ex"); Ey=getdata("mode1","Ey"); Ez=getdata("mode1","Ez");
 Hx=getdata("mode1","Hx"); Hy=getdata("mode1","Hy");
 neff=getdata("mode1","neff");
 matlabsave("mode_fields.mat",x,y,Ex,Ey,Ez,Hx,Hy,neff);
-selectmode(1);
+# Tracked sweeps start at the wavelength of the selected mode; their start
+# wavelength property is read-only. Preserve the nominal fields above, then
+# seed the sweep at its configured start with the best-overlapping mode.
+copydcard("mode1","inpamp_nominal_mode");
+switchtolayout;
+setanalysis("wavelength",{number(m.wavelength_start_nm * 1e-9)});
+nmodes=findmodes;
+if (nmodes<1) {{ error("MODE found no modes at the sweep start wavelength."); }}
+selectmode(bestoverlap("inpamp_nominal_mode"));
 setanalysis("track selected mode",1);
 setanalysis("detailed dispersion calculation",1);
-setanalysis("start wavelength",{number(m.wavelength_start_nm * 1e-9)});
 setanalysis("stop wavelength",{number(m.wavelength_stop_nm * 1e-9)});
 setanalysis("number of points",{m.wavelength_points});
+setanalysis("number of test modes",{m.trial_modes});
 frequencysweep;
 D=getdata("frequencysweep","D");
 f_D=getdata("frequencysweep","f_D");
@@ -117,7 +125,8 @@ set("z",0); set("z span",{number(thick)});
 {setprop("index", c.mode.core_index) if not c.lumerical.core_material else "# Using native dispersive core material."}
 set("override mesh order from material database",1); set("mesh order",1);
 addfdtd;
-set("name","FDTD"); set("dimension","3D");
+# The built-in FDTD solver name is read-only.
+set("dimension","3D");
 set("x",0); set("x span",{number(length + 2 * buffer)});
 set("y",0); set("y span",{number(ys)});
 set("z",0); set("z span",{number(zs)});
@@ -242,6 +251,22 @@ def load_api(path=None):
         raise RuntimeError("Ansys lumapi is unavailable. Install licensed Lumerical and set LUMERICAL_API_PATH to its api/python folder, or run the exported .lsf scripts in the Lumerical GUI. Do not pip-install an unrelated lumapi package.") from error
 
 
+def _run_native_script(session, script_path):
+    """Retain native filename/line diagnostics instead of lumapi's generic error.
+
+    Execute once through feval: retrying a failed script could repeat a costly
+    simulation or modify an INTERCONNECT circuit a second time.
+    """
+    session.eval(
+        'inpamp_script_error="";\n'
+        f'try {{ feval({quote(script_path.resolve().as_posix())}); }} '
+        'catch(inpamp_script_error);'
+    )
+    error = session.getv("inpamp_script_error")
+    if error:
+        raise RuntimeError(f"{script_path.name}: {error}")
+
+
 def _json_result(data):
     if isinstance(data, dict):
         return {str(k): _json_result(v) for k, v in data.items()}
@@ -311,7 +336,7 @@ def run_lumerical(c: Config, solver: str, output: Path, *, api_path=None, config
         constructor = {"mode": api.MODE, "fdtd": api.FDTD, "interconnect": api.INTERCONNECT}[solver]
         with constructor(hide=c.lumerical.hide_gui) as session:
             session.eval(f"cd({quote(output.as_posix())});")
-            script = (output / f"{solver}.lsf").read_text()
+            script_path = output / f"{solver}.lsf"
             if template:
                 # Bindings are verified by native getters before applying any changes.
                 session.load(str(template))
@@ -319,8 +344,10 @@ def run_lumerical(c: Config, solver: str, output: Path, *, api_path=None, config
                     session.getnamed(b.element, b.property)
                 for b in c.lumerical.interconnect.fixed_properties:
                     session.getnamed(b.element, b.property)
+                script = script_path.read_text(encoding="utf-8")
                 script = script.replace('load("SOA_TEMPLATE.icp");', f"load({quote(template.as_posix())});")
-            session.eval(script)
+                script_path.write_text(script, encoding="utf-8")
+            _run_native_script(session, script_path)
             if solver == "mode":
                 _save_mode_metrics(session, c, output)
                 required = ["inp_waveguide.lms", "mode_fields.mat", "mode_dispersion.mat", "mode_metrics.json"]

@@ -1,0 +1,65 @@
+# Generated from YAML. Open in Ansys Lumerical MODE and run in this folder.
+# Effective passive InGaAsP/InP cross-section, propagation along z.
+# No semiconductor gain/current is simulated by this MODE project.
+# Select/verify the physical TE-like mode before using a production sweep.
+switchtolayout;
+deleteall;
+addrect;
+set("name","InP_cladding");
+set("x",0);
+set("x span",8.8e-06);
+set("y",0);
+set("y span",4.4e-06);
+set("z",0);
+set("z span",1e-06);
+set("material","<Object defined dielectric>");
+set("index",3.17);
+set("override mesh order from material database",1);
+set("mesh order",3);
+addrect;
+set("name","effective_active_core");
+set("x",0);
+set("x span",2e-06);
+set("y",0);
+set("y span",4e-07);
+set("z",0);
+set("z span",1e-06);
+set("material","<Object defined dielectric>");
+set("index",3.4);
+set("override mesh order from material database",1);
+set("mesh order",1);
+addfde;
+set("name","FDE");
+set("solver type",3);
+set("x",0); set("x span",8e-06);
+set("y",0); set("y span",4e-06);
+set("z",0);
+setanalysis("wavelength",1.55e-06);
+setanalysis("number of trial modes",6);
+addmesh;
+set("name","core_mesh");
+set("x",0); set("x span",3e-06);
+set("y",0); set("y span",1.4e-06);
+set("z",0); set("z span",1e-6);
+set("override x mesh",1); set("override y mesh",1);
+set("dx",2.5e-08); set("dy",2.5e-08);
+save("inp_waveguide.lms");
+nmodes=findmodes;
+if (nmodes<1) { error("MODE found no modes. Check geometry, mesh and boundaries."); }
+x=getdata("mode1","x"); y=getdata("mode1","y");
+Ex=getdata("mode1","Ex"); Ey=getdata("mode1","Ey"); Ez=getdata("mode1","Ez");
+Hx=getdata("mode1","Hx"); Hy=getdata("mode1","Hy");
+neff=getdata("mode1","neff");
+matlabsave("mode_fields.mat",x,y,Ex,Ey,Ez,Hx,Hy,neff);
+selectmode(1);
+setanalysis("track selected mode",1);
+setanalysis("detailed dispersion calculation",1);
+setanalysis("start wavelength",1.5e-06);
+setanalysis("stop wavelength",1.6e-06);
+setanalysis("number of points",21);
+frequencysweep;
+D=getdata("frequencysweep","D");
+f_D=getdata("frequencysweep","f_D");
+matlabsave("mode_dispersion.mat",D,f_D);
+save("inp_waveguide.lms");
+?"MODE finished. Inspect mode_fields.mat, mode_dispersion.mat and inp_waveguide.lms.";

@@ -32,6 +32,24 @@ def test_material_names_are_native_overrides():
     assert 'set("index"' not in core_section
 
 
+def test_tracked_sweep_is_seeded_at_start_without_overwriting_nominal_fields():
+    c = change(Config(), "source", wavelength_nm=1550.0)
+    c = change(c, "lumerical", mode={**c.lumerical.mode.model_dump(), "wavelength_start_nm": 1500.0})
+    script = mode_script(c)
+    fields, sweep = script.split('copydcard("mode1","inpamp_nominal_mode");')
+    assert 'setanalysis("wavelength",1.55e-06);' in fields
+    assert 'matlabsave("mode_fields.mat"' in fields
+    assert 'setanalysis("wavelength",1.5e-06);' in sweep
+    assert sweep.index("findmodes;") < sweep.index('setanalysis("track selected mode",1);')
+    assert 'selectmode(bestoverlap("inpamp_nominal_mode"));' in sweep
+    assert 'setanalysis("start wavelength"' not in sweep
+
+
+@pytest.mark.parametrize("script,solver", [(mode_script, "FDE"), (fdtd_script, "FDTD")])
+def test_builtin_solver_names_are_not_written(script, solver):
+    assert f'set("name","{solver}")' not in script(Config())
+
+
 def test_export_is_not_a_native_simulation(tmp_path):
     p = tmp_path / "export"
     plan = export_lumerical(Config(), p)
@@ -91,3 +109,43 @@ def test_native_launch_failure_cannot_be_reported_as_success(tmp_path, monkeypat
     assert status["status"] == "failed"
     assert status["results_verified"] is False
     assert not list(output.glob("*.lms"))
+
+
+def test_native_script_error_is_reported_and_stops_postprocessing(tmp_path, monkeypatch):
+    import inpamp.lumerical as native
+
+    message = "Error: mode.lsf line 32: in set, the requested property 'name' is inactive"
+
+    class FailedScriptSession:
+        def __init__(self, **kwargs):
+            self.commands = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def eval(self, script):
+            self.commands.append(script)
+
+        def getv(self, name):
+            assert name == "inpamp_script_error", "Postprocessing must not run after a native failure"
+            return message
+
+    session = FailedScriptSession()
+
+    class ScriptAPI:
+        MODE = FDTD = INTERCONNECT = staticmethod(lambda **kwargs: session)
+
+    monkeypatch.setattr(native, "load_api", lambda path: ScriptAPI)
+    output = tmp_path / "native with spaces"
+    with pytest.raises(RuntimeError, match="mode.lsf line 32"):
+        native.run_lumerical(Config(), "mode", output)
+    status = json.loads((output / "run_status.json").read_text())
+    assert status["status"] == "failed"
+    assert status["results_verified"] is False
+    assert message in status["error"]
+    assert len(session.commands) == 2  # cd and one execution, with no retry
+    assert 'try { feval(' in session.commands[-1]
+    assert (output / "mode.lsf").resolve().as_posix() in session.commands[-1]
