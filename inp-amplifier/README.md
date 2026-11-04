@@ -30,11 +30,11 @@ Use the actual installed version/path. `lumapi` comes with Ansys; do not install
 Start with [configs/lumerical.yaml](configs/lumerical.yaml), which inherits [configs/inp_pump.yaml](configs/inp_pump.yaml). All dimensional keys state their units. The native SOA template/model property map must match your installed version and CML; see [the Lumerical guide](docs/lumerical.md).
 
 ```bash
-python -m inpamp validate configs/lumerical.yaml
-python -m inpamp export configs/lumerical.yaml --output results/native-scripts
-python -m inpamp run configs/lumerical.yaml --solver mode --output results/native-mode
-python -m inpamp run configs/lumerical.yaml --solver fdtd --output results/native-taper
-python -m inpamp run configs/lumerical.yaml --solver interconnect --output results/native-soa
+python -m inpamp validate inp-amplifier/configs/lumerical.yaml
+python -m inpamp export inp-amplifier/configs/lumerical.yaml --output results/native-scripts
+python -m inpamp run inp-amplifier/configs/lumerical.yaml --solver mode --output results/native-mode
+python -m inpamp run inp-amplifier/configs/lumerical.yaml --solver fdtd --output results/native-taper
+python -m inpamp run inp-amplifier/configs/lumerical.yaml --solver interconnect --output results/native-soa
 ```
 
 `export` only writes scripts/settings. Copy the [checked-in scripts](lumerical/generated/README.txt) to Lumerical and run them in its GUI if you prefer; no Python is needed for that. Open a new project, set its working directory to the script folder, then run the `.lsf`. Native projects/results are created only by Ansys. `run` requires `--solver` and has no Python simulation mode. The older `export-lumerical`/`run-lumerical` names remain aliases for these same native operations.
