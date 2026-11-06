@@ -104,6 +104,10 @@ class LumericalCircuit(Model):
 
 class Lumerical(Model):
     hide_gui: bool = False
+    keep_open: bool = True
+    make_figures: bool = True
+    show_figures: bool = True
+    figure_style: str | None = None
     core_material: str | None = None
     cladding_material: str | None = None
     mode: LumericalMode = Field(default_factory=LumericalMode)

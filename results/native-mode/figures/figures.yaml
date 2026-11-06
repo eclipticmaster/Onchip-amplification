@@ -1,0 +1,93 @@
+width_mm: 89.0
+height_mm: 66.0
+font_family: DejaVu Sans
+font_size: 9.0
+dpi: 600
+formats:
+- png
+- pdf
+- svg
+palette:
+- '#0072B2'
+- '#D55E00'
+- '#009E73'
+- '#CC79A7'
+figures:
+  mode_intensity:
+    title: null
+    xlabel: null
+    ylabel: null
+    xlim: null
+    ylim: null
+    xscale: linear
+    yscale: linear
+    colors: null
+    cmap: magma
+    clim: null
+    field_scale: linear
+    field_floor_db: -40.0
+    linewidth: 1.6
+    marker: ''
+    grid: false
+    legend: true
+    zero_line: false
+    enabled: true
+  mode_profiles:
+    title: null
+    xlabel: null
+    ylabel: null
+    xlim: null
+    ylim: null
+    xscale: linear
+    yscale: linear
+    colors: null
+    cmap: magma
+    clim: null
+    field_scale: linear
+    field_floor_db: -40.0
+    linewidth: 1.6
+    marker: ''
+    grid: false
+    legend: true
+    zero_line: false
+    enabled: true
+  waveguide_dispersion:
+    title: null
+    xlabel: null
+    ylabel: null
+    xlim: null
+    ylim: null
+    xscale: linear
+    yscale: linear
+    colors: null
+    cmap: magma
+    clim: null
+    field_scale: linear
+    field_floor_db: -40.0
+    linewidth: 1.6
+    marker: ''
+    grid: false
+    legend: true
+    zero_line: false
+    enabled: true
+  waveguide_beta2:
+    title: null
+    xlabel: null
+    ylabel: null
+    xlim: null
+    ylim: null
+    xscale: linear
+    yscale: linear
+    colors: null
+    cmap: magma
+    clim: null
+    field_scale: linear
+    field_floor_db: -40.0
+    linewidth: 1.6
+    marker: ''
+    grid: false
+    legend: true
+    zero_line: false
+    enabled: true
+traces: []
+rcparams: {}

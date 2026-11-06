@@ -9,6 +9,7 @@ import importlib
 import hashlib
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -60,10 +61,7 @@ deleteall;
 {rectangle("InP_cladding", (xs * 1.1, ys * 1.1, 1e-6), (0, 0, 0), c.mode.cladding_index, 3, c.lumerical.cladding_material)}
 {rectangle("effective_active_core", (width, thickness, 1e-6), (0, 0, 0), c.mode.core_index, 1, c.lumerical.core_material)}
 addfde;
-<<<<<<< HEAD
 # The built-in FDE solver name is read-only.
-=======
->>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4
 set("solver type",3);
 set("x",0); set("x span",{number(xs)});
 set("y",0); set("y span",{number(ys)});
@@ -84,18 +82,6 @@ x=getdata("mode1","x"); y=getdata("mode1","y");
 Ex=getdata("mode1","Ex"); Ey=getdata("mode1","Ey"); Ez=getdata("mode1","Ez");
 Hx=getdata("mode1","Hx"); Hy=getdata("mode1","Hy");
 neff=getdata("mode1","neff");
-<<<<<<< HEAD
-matlabsave("mode_fields.mat",x,y,Ex,Ey,Ez,Hx,Hy,neff);
-# Tracked sweeps start at the wavelength of the selected mode; their start
-# wavelength property is read-only. Preserve the nominal fields above, then
-# seed the sweep at its configured start with the best-overlapping mode.
-copydcard("mode1","inpamp_nominal_mode");
-switchtolayout;
-setanalysis("wavelength",{number(m.wavelength_start_nm * 1e-9)});
-nmodes=findmodes;
-if (nmodes<1) {{ error("MODE found no modes at the sweep start wavelength."); }}
-selectmode(bestoverlap("inpamp_nominal_mode"));
-=======
 # Field intensity, flux overlap and area are computed IN LUMERICAL.
 E2=pinch(abs(Ex)^2+abs(Ey)^2+abs(Ez)^2);
 Sz=pinch(0.5*real(Ex*conj(Hy)-Ey*conj(Hx)));
@@ -107,8 +93,15 @@ Gamma=real(integrate2(Sz*active_mask,[1,2],x,y)/Ptotal);
 Aeff=real(integrate2(E2,[1,2],x,y)^2/integrate2(E2^2,[1,2],x,y));
 matlabsave("mode_fields.mat",x,y,E2,Ex,Ey,Ez,Hx,Hy,neff);
 matlabsave("mode_metrics.mat",neff,Gamma,Aeff);
-selectmode(1);
->>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4
+# Tracked sweeps start at the wavelength of the selected mode; their start
+# wavelength property is read-only. Preserve the nominal fields above, then
+# seed the sweep at its configured start with the best-overlapping mode.
+copydcard("mode1","inpamp_nominal_mode");
+switchtolayout;
+setanalysis("wavelength",{number(m.wavelength_start_nm * 1e-9)});
+nmodes=findmodes;
+if (nmodes<1) {{ error("MODE found no modes at the sweep start wavelength."); }}
+selectmode(bestoverlap("inpamp_nominal_mode"));
 setanalysis("track selected mode",1);
 setanalysis("detailed dispersion calculation",1);
 setanalysis("stop wavelength",{number(m.wavelength_stop_nm * 1e-9)});
@@ -319,6 +312,16 @@ def inspect_interconnect(c: Config, *, template: Path, api_path=None):
     return output
 
 
+def _open_project_gui(api, solver, project):
+    """Open the saved project independently of the short-lived API session."""
+    installation = Path(api.__file__).resolve().parents[2]
+    product = {"mode": "mode-solutions", "fdtd": "fdtd-solutions", "interconnect": "interconnect"}[solver]
+    executable = installation / "bin" / (product + (".exe" if os.name == "nt" else ""))
+    if not executable.is_file():
+        raise FileNotFoundError(f"Lumerical GUI executable not found: {executable}")
+    subprocess.Popen([str(executable), str(project.resolve())], cwd=str(project.parent.resolve()))
+
+
 def run_lumerical(c: Config, solver: str, output: Path, *, api_path=None, config_directory=None):
     # Fail early on missing vendor runtime; never mark export as a solver success.
     api = load_api(api_path)
@@ -382,6 +385,14 @@ def run_lumerical(c: Config, solver: str, output: Path, *, api_path=None, config
                 raise RuntimeError(f"Native simulation did not create the expected artifact: {name}")
         status.update(status="completed", results_verified=True, artifacts=required,
                       note="Native solver execution verified; device calibration/convergence remain separate requirements.")
+        if c.lumerical.keep_open and not c.lumerical.hide_gui:
+            project = output / {"mode": "inp_waveguide.lms", "fdtd": "inp_taper.fsp", "interconnect": "inp_pump.icp"}[solver]
+            try:
+                _open_project_gui(api, solver, project)
+                status.update(gui_opened=True, gui_project=str(project))
+            except OSError as error:
+                # Viewing a saved project is separate from successful simulation.
+                status.update(gui_opened=False, gui_error=str(error))
     except Exception as error:
         status.update(status="failed", error=str(error))
         raise RuntimeError(f"Lumerical {solver} failed: {error}. Check the installed version, license and generated script/template.") from error

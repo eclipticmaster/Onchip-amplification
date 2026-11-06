@@ -1,0 +1,15 @@
+{
+  "solver": "mode",
+  "status": "completed",
+  "results_verified": true,
+  "config_sha256": "e7ea44332ee7081393b2ecbd13cf7d528c3eba807876e3acd882eae87d4965d7",
+  "api_module_path": "C:\\Program Files\\ANSYS Inc\\v261\\Lumerical\\api\\python\\lumapi.py",
+  "artifacts": [
+    "inp_waveguide.lms",
+    "mode_fields.mat",
+    "mode_dispersion.mat",
+    "mode_metrics.mat",
+    "mode_metrics.json"
+  ],
+  "note": "Native solver execution verified; device calibration/convergence remain separate requirements."
+}

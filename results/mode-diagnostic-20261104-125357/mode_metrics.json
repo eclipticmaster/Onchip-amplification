@@ -1,9 +1,0 @@
-{
-  "engine": "Ansys Lumerical MODE vector FDE",
-  "mode": "mode1 (verify TE-like identity in GUI)",
-  "neff_real": 3.2609642388336986,
-  "neff_imag": 0.0,
-  "active_power_overlap": 0.22989903689359317,
-  "scalar_field_area_um2": 1.2827428521480402,
-  "note": "Overlap is from native vector Poynting flux; area is the scalar |E| definition. Effective passive index geometry is not a resolved QW gain calculation."
-}

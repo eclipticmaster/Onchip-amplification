@@ -138,6 +138,33 @@
           "title": "Hide Gui",
           "type": "boolean"
         },
+        "keep_open": {
+          "default": true,
+          "title": "Keep Open",
+          "type": "boolean"
+        },
+        "make_figures": {
+          "default": true,
+          "title": "Make Figures",
+          "type": "boolean"
+        },
+        "show_figures": {
+          "default": true,
+          "title": "Show Figures",
+          "type": "boolean"
+        },
+        "figure_style": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Figure Style"
+        },
         "core_material": {
           "anyOf": [
             {

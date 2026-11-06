@@ -1,8 +1,15 @@
 {
   "solver": "mode",
-  "status": "failed",
-  "results_verified": false,
-  "config_sha256": "4802d0ea452554705461b3abb140f723d3ab3ccb3ab59585224718adfe15e79b",
+  "status": "completed",
+  "results_verified": true,
+  "config_sha256": "12813f14e75ac54858011d25ae4bac3c308e869face8556279946b8abb7c742f",
   "api_module_path": "C:\\Program Files\\ANSYS Inc\\v261\\Lumerical\\api\\python\\lumapi.py",
-  "error": "'Failed to evaluate code'"
+  "artifacts": [
+    "inp_waveguide.lms",
+    "mode_fields.mat",
+    "mode_dispersion.mat",
+    "mode_metrics.mat",
+    "mode_metrics.json"
+  ],
+  "note": "Native solver execution verified; device calibration/convergence remain separate requirements."
 }

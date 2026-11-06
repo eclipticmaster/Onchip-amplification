@@ -28,17 +28,17 @@ python -m inpamp run configs/lumerical.yaml --solver interconnect --output resul
 
 Replace the version/path with your installation. Linux uses the equivalent exported path. Configure your Ansys license through Ansys; no credentials belong in YAML. `run-lumerical` is an alias for `run`; both require the vendor API and use the native solver exclusively. An unavailable API, license, native property or result is an error with no Python replacement computation.
 
+`--output` is optional. With the flag omitted, the CLI creates `results/<solver>-<local date/time and UTC offset>`. Repeating an occupied `--output` value creates a timestamped sibling. Each selected path is printed and returned as `output_directory`. See the [file guide](../../FILE_GUIDE.md) for the complete output map and instructions for renaming a run.
+
+With `lumerical.keep_open: true` (the default) and `hide_gui: false`, a successful run opens the saved native project in an independent Lumerical window. That window stays open after Python exits. The API-controlled window closes when its session ends; the project is reopened with its saved simulation results. Set `keep_open: false` or use `--set lumerical.hide_gui=true` for unattended runs. If only reopening fails, the simulation remains completed and `run_status.json` records `gui_opened: false` and `gui_error`.
+
 The runner records `run_status.json`, the configuration hash and expected native files. MODE metrics are integrated in `mode.lsf`; Python only serializes their native values. Ansys is not installed in this cloud machine, so native execution/compatibility still requires validation on your licensed installation.
 
-<<<<<<< HEAD
 MODE exports fields and overlap metrics at `source.wavelength_nm`. It then solves at `lumerical.mode.wavelength_start_nm`, selects the mode with the best overlap with the nominal mode, and tracks that mode through `wavelength_stop_nm`. In a tracked sweep, Lumerical fixes the start wavelength to the initial mode's wavelength; setting `start wavelength` after enabling tracking is invalid. The final `.lms` contains the sweep, while `mode_fields.mat` and `mode_metrics.json` describe the nominal source wavelength. The built-in FDE/FDTD solver names are read-only and are left at their native defaults.
 
-If a script fails, the CLI and `run_status.json` include the native script filename, line number and error message captured with Lumerical's [try/catch](https://optics.ansys.com/hc/en-us/articles/360034928513-try-Script-command) and [feval](https://optics.ansys.com/hc/en-us/articles/360034405934-feval-Script-command) commands. Inspect that line in the exported `.lsf`. After correcting YAML or updating the code, rerun with a **new output directory**: existing results are never overwritten or resumed. Old exported scripts must be regenerated to pick up code fixes.
+If a script fails, the CLI and `run_status.json` include the native script filename, line number and error message captured with Lumerical's [try/catch](https://optics.ansys.com/hc/en-us/articles/360034928513-try-Script-command) and [feval](https://optics.ansys.com/hc/en-us/articles/360034405934-feval-Script-command) commands. Inspect that line in the exported `.lsf`. After correcting YAML or updating the code, repeat the command: the CLI selects a fresh output folder while preserving previous results. Regenerate exported scripts to incorporate code fixes.
 
-## 3. Prepare the active SOA circuit in INTERCONNECT
-=======
 ## 2. Optical cross-section and transition
->>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4
 
 `mode.*` sets fallback effective indices and the native MODE window. `device.width_um`, `core_thickness_um` and the active-stripe mask feed the MODE geometry/analysis. `lumerical.mode.*` controls the native mesh/trial modes/dispersion sweep. Set exact `lumerical.core_material` and `cladding_material` names from your installation for real dispersive materials. No generic index choice is a substitute for your epitaxy.
 
@@ -122,10 +122,4 @@ python -m inpamp inspect-results results/native-soa/output_spectrum.mat
 
 Use the exact native dataset paths listed by `inspect-results` with `plot --solver interconnect --result ... --x ... --y ...`. Multi-trace arrays require explicit field/index selection; complex traces require a component selection. To plot a sweep, configure/export a scalar native measurement in every case, then use `plot-sweep --result FILE --field PATH`. The [README](../README.md) contains full command examples. Missing result files are errors, never replaced with analytic curves.
 
-<<<<<<< HEAD
-For INTERCONNECT, compare gain versus current, input power and wavelength with the native SOA reference example or measured/literature data. Check ASE/noise definitions and reference planes. Add the intended resonator/coupler CML and measured dispersion only after amplifier/pump delivery is calibrated. There is no claim that having a native project file alone proves soliton generation.
-
-The default MODE and FDTD workflows have been exercised on Windows with Lumerical 2026 R1 (v261). The saved MODE project was reopened and its 21 finite dispersion values verified across 1500–1600 nm. FDTD created its native project and 21 finite transmission/reflection samples over the same range. These runs establish execution for this configuration and installation; they do not establish mesh convergence or device calibration. INTERCONNECT's template-specific bindings still require validation with your active circuit. The Python tests verify generation, unit conversions, field postprocessing and failure reporting without simulating Ansys. Model equations and optional reference-code assumptions remain in [physics.md](physics.md), with provenance in [references.md](references.md).
-=======
 See [scope](physics.md), [native calibration](calibration.md) and [references](references.md). Orchestration/IO tests do not execute Ansys or validate your physical model.
->>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4

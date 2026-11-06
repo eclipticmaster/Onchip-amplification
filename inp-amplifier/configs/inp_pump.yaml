@@ -30,6 +30,10 @@ mode:
 parameters: {}
 lumerical:
   hide_gui: false
+  keep_open: true  # Reopen the saved project for inspection after a successful run.
+  make_figures: true  # CLI run/sweep: export publication figures from native results.
+  show_figures: true  # Open the offline gallery after visible runs.
+  figure_style: null  # Optional style YAML; relative to the YAML selected on the CLI.
   core_material: null
   cladding_material: null
   mode:

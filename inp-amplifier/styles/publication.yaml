@@ -1,0 +1,38 @@
+# Presentation only. This file does not change a simulation or its exported data.
+# Use --style with figures, or lumerical.figure_style: ../styles/publication.yaml.
+width_mm: 89.0
+height_mm: 66.0
+font_family: DejaVu Sans
+font_size: 9.0
+dpi: 600
+formats: [png, pdf, svg]
+palette: ['#0072B2', '#D55E00', '#009E73', '#CC79A7']
+figures:
+  mode_intensity:
+    title: Mode intensity
+    cmap: magma
+    field_scale: linear  # Or dB; uses field_floor_db only for map display.
+    field_floor_db: -40.0
+    # xlim: [-2.0, 2.0]
+    # ylim: [-1.0, 1.0]
+  mode_profiles:
+    title: Mode cross-sections
+    colors: ['#0072B2', '#D55E00']
+  waveguide_dispersion:
+    title: Waveguide dispersion
+    xlabel: Wavelength (nm)
+    # ylabel: 'D (ps / nm / km)'
+    # xlim: [1500.0, 1600.0]
+    # ylim: [-260.0, -220.0]
+    colors: ['#0072B2']
+    marker: ''  # 'o' shows exported samples explicitly.
+    grid: false
+  waveguide_beta2:
+    title: Group-velocity dispersion
+    colors: ['#009E73']
+  taper_transmission:
+    title: Passive taper transmission
+  taper_reflection_db:
+    title: Passive taper reflection
+traces: []  # Add exact native analyzer mappings; see docs/figures.md.
+rcparams: {}  # Optional Matplotlib rcParams, e.g. axes.linewidth: 0.8.

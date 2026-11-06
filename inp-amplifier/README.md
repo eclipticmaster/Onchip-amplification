@@ -4,33 +4,11 @@
 
 The intended system is CW laser → InGaAsP/InP semiconductor optical amplifier → microcomb pump link. MODE handles vector modes/overlap/dispersion; FDTD handles passive taper transmission/reflection; INTERCONNECT runs the active native SOA/CML circuit. Gain, ASE, carrier dynamics, heating and nonlinear resonator physics must be provided by the selected native model. Having a passive ring component alone does not simulate microcomb generation.
 
+The [complete file guide](../FILE_GUIDE.md) describes every project file and generated output, with instructions for naming and renaming runs.
+
 ## Install the automation and plotting tools
 
-<<<<<<< HEAD
-Use your virtual-environment Python. The prepared cloud Python is `/workspace/.venvs/inp-amplifier/bin/python`. A checked-in [native script export](lumerical/generated/README.txt) is provided so you can copy it straight to Lumerical without Python on that machine. Open a **new** MODE/FDTD project, set its working directory to the export folder and run its script; the geometry script rebuilds the objects in that project.
-
-| Product | Native work prepared |
-| --- | --- |
-| MODE | Vector FDE modes, tracked dispersion, field export, active-stripe power overlap |
-| FDTD | Passive 3-D taper coupon with total transmission/reflection spectra |
-| INTERCONNECT | Native SOA/CML template automation; YAML-to-model bindings and analyzer export |
-
-For active gain, select/configure a native SOA or foundry CML circuit in INTERCONNECT once, inspect its actual property names, and set `lumerical.interconnect.template_path` and bindings. Then run `--solver interconnect`. This keeps gain/carrier physics in the native SOA model; it does not substitute a Python gain curve or an ideal amplifier. The [guide](docs/lumerical.md#3-prepare-the-active-soa-circuit-in-interconnect) gives the circuit structure and commands.
-
-**Current validation:** The default YAML has been run through native MODE and FDTD on Windows with Ansys Lumerical 2026 R1 (v261). MODE produced nominal-wavelength fields/overlap metrics and 21 finite dispersion points spanning 1500–1600 nm; FDTD produced a saved taper project and 21 finite transmission/reflection samples over that range. Compatibility with other versions, convergence and SOA template calibration require separate checks. INTERCONNECT still requires your configured native SOA/CML template and has not been validated with an active circuit here. `.lms/.fsp/.icp` files are created by licensed native runs, not fabricated during export. Full native Kerr-comb simulation is not bundled; the included LLE is an optional separate Python reference model.
-
-The starting effective InGaAsP/InP geometry and coefficients are illustrative, not a foundry stack or a literature-calibrated device. See [references and provenance](docs/references.md) and [calibration](docs/calibration.md). The earlier Er:Al₂O₃ scripts are retained separately.
-
----
-
-The remainder documents the **optional Python reference calculations**, conceptual GDS export and their verification. These help check trends and pump budgets, and are never presented as Lumerical results.
-
-## Optional Python reference workflow
-
-From this `inp-amplifier` directory on Linux/macOS:
-=======
 From this directory:
->>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4
 
 ```bash
 bash scripts/setup.sh
@@ -52,6 +30,26 @@ Use the actual installed version/path. `lumapi` comes with Ansys; do not install
 ## Edit YAML and run native simulations
 
 Start with [configs/lumerical.yaml](configs/lumerical.yaml), which inherits [configs/inp_pump.yaml](configs/inp_pump.yaml). All dimensional keys state their units. The native SOA template/model property map must match your installed version and CML; see [the Lumerical guide](docs/lumerical.md).
+
+You can repeat this PowerShell command from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m inpamp run inp-amplifier/configs/lumerical.yaml --solver mode
+```
+
+Each call creates a fresh folder such as `results/mode-2026-11-05_14-03-07-0800`. The timestamp uses the computer's local time with UTC offset; same-second collisions receive numbered suffixes. The selected path is printed and returned as `output_directory`. `--output` remains optional: an occupied destination receives a timestamped sibling. The export, sweep, plot and plot-sweep commands also select output folders automatically. Use the path printed by a run in the analysis examples below.
+
+Rename a completed run's whole folder whenever you want a descriptive experiment name. Its native files, relative gallery links and generated `figures/regenerate.py` stay together. The [file guide](../FILE_GUIDE.md#renaming-a-completed-run) explains regeneration after renaming.
+
+Successful CLI runs also generate an offline **figure gallery** in `<run>/figures`, with PDF/SVG/600-dpi PNG exports, plotted-data CSVs, editable `figures.yaml`, a regeneration script and source hashes. The gallery opens automatically for visible runs. See [the literature-based figure guide](docs/figures.md) for the important amplifier/microcomb plots, interpretation, style editing and explicit analyzer mappings. Replot your current data without rerunning a simulation:
+
+```powershell
+.\.venv\Scripts\python.exe -m inpamp figures results/native-mode --show
+# After editing results/native-mode/figures/figures.yaml:
+.\.venv\Scripts\python.exe -m inpamp figures results/native-mode --replace --show
+```
+
+These commands assume the repository root. Use `--style inp-amplifier/styles/publication.yaml` for the provided starting style. `lumerical.make_figures`, `show_figures` and `figure_style` control the automatic behavior. The native simulation must provide the data: missing gain/noise/comb traces are identified rather than generated from a replacement model.
 
 ```bash
 python -m inpamp validate inp-amplifier/configs/lumerical.yaml
@@ -113,7 +111,7 @@ Configure that result in YAML first. A spectral array is not a scalar power-mete
 
 ## Reproducibility and migration
 
-Each export contains the resolved YAML and a simulation plan. Native runs record status and expected result files. Existing output directories must be empty; there is no silent merging with stale results. Use a child YAML with `extends` or `--set device.current_mA=300.0` for a variant.
+Each export contains the resolved YAML and a simulation plan. Native runs record status and expected result files. The CLI allocates separate output folders and preserves previous data, including when you repeat an existing `--output` value. Direct Python calls to the lower-level native/export functions use an explicitly supplied empty destination. Use a child YAML with `extends` or `--set device.current_mA=300.0` for a variant.
 
 Schema v2 removes the old Python-only `material`, `numerics`, `transient`, `microcomb` and `layout` sections and scalar-mode grid settings. Old v1 YAML is rejected with migration guidance. Put extra native model coefficients under `parameters` and explicitly bind them to verified native properties; they are never consumed by a Python model. See [scope](docs/physics.md), [calibration](docs/calibration.md), and [references](docs/references.md).
 

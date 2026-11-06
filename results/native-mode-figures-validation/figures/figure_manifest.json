@@ -1,0 +1,197 @@
+{
+  "operation": "publication_figures",
+  "source_directory": "C:\\Onchip-amplification\\results\\native-mode-figures-validation",
+  "simulation_performed": false,
+  "source_directory_relative": "..",
+  "source_files_relative": {
+    "mode_dispersion.mat": "86af0d33c624c4a6149750b1d21d1c59b052cdefcb1a3c9873629010100e1c9c",
+    "mode_fields.mat": "50396b280ce8bd860348483ac42c64d432d564d7dd5e6d368f9e3900fcb9ead9",
+    "mode_metrics.mat": "c7f82fc6d27f4c235ec6a4ffd08b489e8872040a6e0e741762b5bb47168023b7",
+    "resolved_config.yaml": "f630c69ea7e1e83c9df955cd3337ee0921023fdc8def9ba58bd6b32e8ef3de61",
+    "run_status.json": "f953a2aea4f74bba1ad14b84b92d003039c586a35bf7b2ad4dcd8a6cbd570e03"
+  },
+  "source_status": "Native run completed and files verified by the runner",
+  "sources": {
+    "C:\\Onchip-amplification\\results\\native-mode-figures-validation\\mode_dispersion.mat": "86af0d33c624c4a6149750b1d21d1c59b052cdefcb1a3c9873629010100e1c9c",
+    "C:\\Onchip-amplification\\results\\native-mode-figures-validation\\mode_fields.mat": "50396b280ce8bd860348483ac42c64d432d564d7dd5e6d368f9e3900fcb9ead9",
+    "C:\\Onchip-amplification\\results\\native-mode-figures-validation\\mode_metrics.mat": "c7f82fc6d27f4c235ec6a4ffd08b489e8872040a6e0e741762b5bb47168023b7",
+    "C:\\Onchip-amplification\\results\\native-mode-figures-validation\\resolved_config.yaml": "f630c69ea7e1e83c9df955cd3337ee0921023fdc8def9ba58bd6b32e8ef3de61",
+    "C:\\Onchip-amplification\\results\\native-mode-figures-validation\\run_status.json": "f953a2aea4f74bba1ad14b84b92d003039c586a35bf7b2ad4dcd8a6cbd570e03"
+  },
+  "renderer": {
+    "python": "3.14.8",
+    "matplotlib": "3.11.2",
+    "numpy": "2.5.4"
+  },
+  "style": {
+    "width_mm": 89.0,
+    "height_mm": 66.0,
+    "font_family": "DejaVu Sans",
+    "font_size": 9.0,
+    "dpi": 600,
+    "formats": [
+      "png",
+      "pdf",
+      "svg"
+    ],
+    "palette": [
+      "#0072B2",
+      "#D55E00",
+      "#009E73",
+      "#CC79A7"
+    ],
+    "figures": {
+      "mode_intensity": {
+        "title": null,
+        "xlabel": null,
+        "ylabel": null,
+        "xlim": null,
+        "ylim": null,
+        "xscale": "linear",
+        "yscale": "linear",
+        "colors": null,
+        "cmap": "magma",
+        "clim": null,
+        "field_scale": "linear",
+        "field_floor_db": -40.0,
+        "linewidth": 1.6,
+        "marker": "",
+        "grid": false,
+        "legend": true,
+        "zero_line": false,
+        "enabled": true
+      },
+      "mode_profiles": {
+        "title": null,
+        "xlabel": null,
+        "ylabel": null,
+        "xlim": null,
+        "ylim": null,
+        "xscale": "linear",
+        "yscale": "linear",
+        "colors": null,
+        "cmap": "magma",
+        "clim": null,
+        "field_scale": "linear",
+        "field_floor_db": -40.0,
+        "linewidth": 1.6,
+        "marker": "",
+        "grid": false,
+        "legend": true,
+        "zero_line": false,
+        "enabled": true
+      },
+      "waveguide_dispersion": {
+        "title": null,
+        "xlabel": null,
+        "ylabel": null,
+        "xlim": null,
+        "ylim": null,
+        "xscale": "linear",
+        "yscale": "linear",
+        "colors": null,
+        "cmap": "magma",
+        "clim": null,
+        "field_scale": "linear",
+        "field_floor_db": -40.0,
+        "linewidth": 1.6,
+        "marker": "",
+        "grid": false,
+        "legend": true,
+        "zero_line": false,
+        "enabled": true
+      },
+      "waveguide_beta2": {
+        "title": null,
+        "xlabel": null,
+        "ylabel": null,
+        "xlim": null,
+        "ylim": null,
+        "xscale": "linear",
+        "yscale": "linear",
+        "colors": null,
+        "cmap": "magma",
+        "clim": null,
+        "field_scale": "linear",
+        "field_floor_db": -40.0,
+        "linewidth": 1.6,
+        "marker": "",
+        "grid": false,
+        "legend": true,
+        "zero_line": false,
+        "enabled": true
+      }
+    },
+    "traces": [],
+    "rcparams": {}
+  },
+  "figures": [
+    {
+      "id": "mode_intensity",
+      "files": {
+        "png": "mode_intensity.png",
+        "pdf": "mode_intensity.pdf",
+        "svg": "mode_intensity.svg"
+      },
+      "csv": "mode_intensity.csv",
+      "caption": "Native MODE intensity, normalized to its peak. White: effective core; dashed blue: configured active stripe when geometry metadata is available. Display normalization does not change the exported field. A scalar intensity map alone does not establish polarization or single-mode operation."
+    },
+    {
+      "id": "mode_profiles",
+      "files": {
+        "png": "mode_profiles.png",
+        "pdf": "mode_profiles.pdf",
+        "svg": "mode_profiles.svg"
+      },
+      "csv": "mode_profiles.csv",
+      "caption": "Slices through the grid points nearest x=0 and y=0, sharing the same global peak normalization. These are intensity profiles, not integrated power fractions."
+    },
+    {
+      "id": "waveguide_dispersion",
+      "files": {
+        "png": "waveguide_dispersion.png",
+        "pdf": "waveguide_dispersion.pdf",
+        "svg": "waveguide_dispersion.svg"
+      },
+      "csv": "waveguide_dispersion.csv",
+      "caption": "Native tracked-mode dispersion D. This is the straight effective SOA waveguide, not the SiN resonator integrated dispersion. Fixed-index materials include waveguide dispersion but omit physical material dispersion."
+    },
+    {
+      "id": "waveguide_beta2",
+      "files": {
+        "png": "waveguide_beta2.png",
+        "pdf": "waveguide_beta2.pdf",
+        "svg": "waveguide_beta2.svg"
+      },
+      "csv": "waveguide_beta2.csv",
+      "caption": "Algebraic conversion of exported D: beta2 = -lambda\u00b2 D / (2\u03c0c). Positive beta2 is normal dispersion; negative beta2 is anomalous. This conversion supplies no resonator frequencies or soliton prediction."
+    }
+  ],
+  "unavailable": [
+    "Confinement/area versus geometry requires a completed native MODE parameter sweep.",
+    "SOA output power, saturation, gain bandwidth, ASE and noise figure require a configured native SOA circuit and analyzer exports.",
+    "Comb spectra, integrated resonator dispersion, detuning scans and RF/RIN spectra require the corresponding resonator/dynamics/noise data."
+  ],
+  "artifacts": [
+    "mode_intensity.png",
+    "mode_intensity.pdf",
+    "mode_intensity.svg",
+    "mode_intensity.csv",
+    "mode_profiles.png",
+    "mode_profiles.pdf",
+    "mode_profiles.svg",
+    "mode_profiles.csv",
+    "waveguide_dispersion.png",
+    "waveguide_dispersion.pdf",
+    "waveguide_dispersion.svg",
+    "waveguide_dispersion.csv",
+    "waveguide_beta2.png",
+    "waveguide_beta2.pdf",
+    "waveguide_beta2.svg",
+    "waveguide_beta2.csv",
+    "figures.yaml",
+    "regenerate.py",
+    "metrics.json",
+    "index.html"
+  ]
+}

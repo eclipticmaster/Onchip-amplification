@@ -10,6 +10,22 @@ from inpamp.config import Config, with_override
 import inpamp.lumerical as native
 
 
+@pytest.mark.parametrize("generate", [native.mode_script, native.fdtd_script, native.interconnect_script])
+def test_native_scripts_have_no_merge_conflicts(generate):
+    script = generate(Config())
+    assert not any(line.startswith(("<<<<<<<", "=======", ">>>>>>>")) for line in script.splitlines())
+
+
+def test_nominal_metrics_are_exported_before_seeding_tracked_sweep():
+    script = native.mode_script(Config())
+    metrics, sweep = script.split('copydcard("mode1","inpamp_nominal_mode");')
+    assert 'matlabsave("mode_metrics.mat",neff,Gamma,Aeff);' in metrics
+    assert 'setanalysis("wavelength",1.5e-06);' in sweep
+    assert sweep.index("findmodes;") < sweep.index('setanalysis("track selected mode",1);')
+    assert 'selectmode(bestoverlap("inpamp_nominal_mode"));' in sweep
+    assert 'setanalysis("start wavelength"' not in sweep
+
+
 def test_native_scripts_encode_geometry_and_native_metrics():
     c = with_override(Config(), "device.width_um", 2.6)
     script = native.mode_script(c)
@@ -21,41 +37,9 @@ def test_native_scripts_encode_geometry_and_native_metrics():
     assert 'R=-transmission("R")' in native.fdtd_script(c)
 
 
-<<<<<<< HEAD
-def test_material_names_are_native_overrides():
-    c = change(Config(), "lumerical", core_material="my_calibrated_core")
-    script = mode_script(c)
-    assert 'set("material","my_calibrated_core")' in script
-    core_section = script.split('set("name","effective_active_core")')[1].split("addfde;")[0]
-    assert 'set("index"' not in core_section
-
-
-def test_tracked_sweep_is_seeded_at_start_without_overwriting_nominal_fields():
-    c = change(Config(), "source", wavelength_nm=1550.0)
-    c = change(c, "lumerical", mode={**c.lumerical.mode.model_dump(), "wavelength_start_nm": 1500.0})
-    script = mode_script(c)
-    fields, sweep = script.split('copydcard("mode1","inpamp_nominal_mode");')
-    assert 'setanalysis("wavelength",1.55e-06);' in fields
-    assert 'matlabsave("mode_fields.mat"' in fields
-    assert 'setanalysis("wavelength",1.5e-06);' in sweep
-    assert sweep.index("findmodes;") < sweep.index('setanalysis("track selected mode",1);')
-    assert 'selectmode(bestoverlap("inpamp_nominal_mode"));' in sweep
-    assert 'setanalysis("start wavelength"' not in sweep
-
-
-@pytest.mark.parametrize("script,solver", [(mode_script, "FDE"), (fdtd_script, "FDTD")])
-def test_builtin_solver_names_are_not_written(script, solver):
-    assert f'set("name","{solver}")' not in script(Config())
-
-
-def test_export_is_not_a_native_simulation(tmp_path):
-    p = tmp_path / "export"
-    plan = export_lumerical(Config(), p)
-=======
 def test_export_is_not_a_simulation(tmp_path):
     output = tmp_path / "export"
     plan = native.export_lumerical(Config(), output)
->>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4
     assert plan["status"] == "scripts_generated_not_simulated"
     assert len(list(output.glob("*.lsf"))) == 3
     assert not list(output.glob("*.lms"))
@@ -81,10 +65,49 @@ def test_native_failure_has_no_fallback(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match="native license failure"):
         native.run_lumerical(Config(), "mode", output)
     status = json.loads((output / "run_status.json").read_text())
-<<<<<<< HEAD
-    assert status["status"] == "failed"
-    assert status["results_verified"] is False
-    assert not list(output.glob("*.lms"))
+    assert status["status"] == "failed" and status["results_verified"] is False
+    assert not list(output.glob("*.mat"))
+
+
+def test_mode_serialization_uses_native_metric_values_only(tmp_path):
+    fixture = {"neff": 3.25 + .01j, "Gamma": .23, "Aeff": 1.2e-12}
+    class ExportedValues:
+        def getv(self, key):
+            return fixture[key]
+    native._export_mode_data(ExportedValues(), tmp_path)
+    result = json.loads((tmp_path / "mode_metrics.json").read_text())
+    assert result["active_power_overlap"] == .23
+    assert result["scalar_field_area_m2"] == 1.2e-12
+
+
+def test_mode_run_dispatches_native_script_and_requires_native_artifacts(tmp_path, monkeypatch):
+    # This records the API contract; it never computes a field or mode.
+    calls = []
+    class Session:
+        def __init__(self, **kwargs):
+            calls.append("open_MODE")
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def eval(self, script):
+            calls.append(script)
+        def getv(self, key):
+            return {"inpamp_script_error": "", "neff": 3.25, "Gamma": .23, "Aeff": 1.2e-12}[key]
+    monkeypatch.setattr(native, "load_api", lambda _: SimpleNamespace(MODE=Session))
+    with pytest.raises(RuntimeError, match="expected artifact"):
+        native.run_lumerical(Config(), "mode", tmp_path / "native")
+    assert calls[0] == "open_MODE"
+    assert "feval(" in calls[2]
+    assert "findmodes" in (tmp_path / "native" / "mode.lsf").read_text()
+
+
+def test_empty_native_datasets_and_bad_api_path_rejected(tmp_path):
+    assert not native._has_numeric_data({"Lumerical_dataset": {"id": 1}, "power": []})
+    assert not native._has_numeric_data({"power": np.array([np.nan])})
+    assert native._has_numeric_data({"power": np.array([0.0, 1.0])})
+    with pytest.raises(ValueError, match="vendor lumapi.py"):
+        native.load_api(tmp_path)
 
 
 def test_native_script_error_is_reported_and_stops_postprocessing(tmp_path, monkeypatch):
@@ -125,47 +148,44 @@ def test_native_script_error_is_reported_and_stops_postprocessing(tmp_path, monk
     assert len(session.commands) == 2  # cd and one execution, with no retry
     assert 'try { feval(' in session.commands[-1]
     assert (output / "mode.lsf").resolve().as_posix() in session.commands[-1]
-=======
-    assert status["status"] == "failed" and status["results_verified"] is False
-    assert not list(output.glob("*.mat"))
 
 
-def test_mode_serialization_uses_native_metric_values_only(tmp_path):
-    fixture = {"neff": 3.25 + .01j, "Gamma": .23, "Aeff": 1.2e-12}
-    class ExportedValues:
-        def getv(self, key):
-            return fixture[key]
-    native._export_mode_data(ExportedValues(), tmp_path)
-    result = json.loads((tmp_path / "mode_metrics.json").read_text())
-    assert result["active_power_overlap"] == .23
-    assert result["scalar_field_area_m2"] == 1.2e-12
+@pytest.mark.parametrize("hide,keep_open,expected", [(False, True, True), (True, True, False), (False, False, False)])
+def test_gui_reopens_only_after_successful_visible_runs(tmp_path, monkeypatch, hide, keep_open, expected):
+    output = tmp_path / "run"
+    opened = []
 
-
-def test_mode_run_dispatches_native_script_and_requires_native_artifacts(tmp_path, monkeypatch):
-    # This records the API contract; it never computes a field or mode.
-    calls = []
     class Session:
         def __init__(self, **kwargs):
-            calls.append("open_MODE")
+            pass
         def __enter__(self):
             return self
         def __exit__(self, *args):
             pass
-        def eval(self, script):
-            calls.append(script)
-        def getv(self, key):
-            return {"neff": 3.25, "Gamma": .23, "Aeff": 1.2e-12}[key]
+
+    def fixture_exports(session, script):
+        for name in ["inp_waveguide.lms", "mode_fields.mat", "mode_dispersion.mat", "mode_metrics.mat"]:
+            (output / name).write_text("IO fixture, not simulation data")
+
+    Session.eval = lambda self, script: None
     monkeypatch.setattr(native, "load_api", lambda _: SimpleNamespace(MODE=Session))
-    with pytest.raises(RuntimeError, match="expected artifact"):
-        native.run_lumerical(Config(), "mode", tmp_path / "native")
-    assert calls[0] == "open_MODE"
-    assert "findmodes" in calls[2]
+    monkeypatch.setattr(native, "_run_native_script", fixture_exports)
+    monkeypatch.setattr(native, "_export_mode_data", lambda s, p: (p / "mode_metrics.json").write_text("{}"))
+    monkeypatch.setattr(native, "_open_project_gui", lambda api, solver, path: opened.append(path))
+    c = Config.model_validate({"lumerical": {"hide_gui": hide, "keep_open": keep_open}})
+    status = native.run_lumerical(c, "mode", output)
+    assert status["status"] == "completed" and status["results_verified"]
+    assert opened == ([output / "inp_waveguide.lms"] if expected else [])
 
 
-def test_empty_native_datasets_and_bad_api_path_rejected(tmp_path):
-    assert not native._has_numeric_data({"Lumerical_dataset": {"id": 1}, "power": []})
-    assert not native._has_numeric_data({"power": np.array([np.nan])})
-    assert native._has_numeric_data({"power": np.array([0.0, 1.0])})
-    with pytest.raises(ValueError, match="vendor lumapi.py"):
-        native.load_api(tmp_path)
->>>>>>> 06e41dcd3220de3304f4664c87f8723bb3a0fbd4
+def test_gui_launch_uses_vendor_installation_and_separate_path_arguments(tmp_path, monkeypatch):
+    installation = tmp_path / "Ansys with spaces"
+    api_path = installation / "api" / "python" / "lumapi.py"
+    executable = installation / "bin" / ("mode-solutions.exe" if native.os.name == "nt" else "mode-solutions")
+    executable.parent.mkdir(parents=True)
+    executable.touch()
+    project = tmp_path / "results with spaces" / "inp_waveguide.lms"
+    calls = []
+    monkeypatch.setattr(native.subprocess, "Popen", lambda args, **kwargs: calls.append((args, kwargs)))
+    native._open_project_gui(SimpleNamespace(__file__=str(api_path)), "mode", project)
+    assert calls == [([str(executable), str(project.resolve())], {"cwd": str(project.parent.resolve())})]

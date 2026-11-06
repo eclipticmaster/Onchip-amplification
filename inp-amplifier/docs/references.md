@@ -9,6 +9,8 @@ This workflow uses native **Ansys Lumerical MODE, FDTD and INTERCONNECT**. It do
 
 ## Physics literature for choosing/calibrating a native model
 
+The [figure guide](figures.md) adds a literature survey of which measurements/simulations to plot, with primary full-text references from Davenport et al. (2016), Feyisa et al. (2024) and Raja et al. (2019). It separates the figures available from the current passive native exports from those requiring an active SOA/resonator model. These publications motivate characterization, not numerical calibration of the present example.
+
 1. M. J. Connelly, “Wideband semiconductor optical amplifier steady-state numerical model,” *IEEE Journal of Quantum Electronics* **37**, 439–447 (2001). [DOI: 10.1109/3.910455](https://doi.org/10.1109/3.910455). Background for gain/carrier/ASE capabilities to look for in the native SOA model; this repository does not implement that model in Python.
 2. G. P. Agrawal and N. A. Olsson, “Self-phase modulation and spectral broadening of optical pulses in semiconductor laser amplifiers,” *IEEE Journal of Quantum Electronics* **25**, 2297–2306 (1989). Background for native gain/phase dynamics and linewidth-enhancement parameterization.
 3. H. Coen, H. G. Randle, T. Sylvestre and M. Erkintalo, “Modeling of octave-spanning Kerr frequency combs using a generalized mean-field Lugiato–Lefever model,” *Optics Letters* **38**, 37–39 (2013). [DOI: 10.1364/OL.38.000037](https://doi.org/10.1364/OL.38.000037). Background for nonlinear resonator requirements; no Python LLE solver remains in this project.
